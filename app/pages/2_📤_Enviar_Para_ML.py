@@ -1,7 +1,9 @@
-import altair as alt
-import streamlit as st
-import pandas as pd
 import io
+
+import altair as alt
+import pandas as pd
+
+import streamlit as st
 
 # Initialize connection.
 # conn = st.connection("postgresql", type="sql")
@@ -9,5 +11,5 @@ import io
 # @st.cache_data
 # df = conn.query('SELECT * FROM tiny_products;', ttl="60m")
 
-st.title('Produtos A Enviar ao FulFilment')
-st.caption('Tabela de produtos a enviar')
+st.title("Produtos A Enviar ao FulFilment")
+st.caption("Tabela de produtos a enviar")

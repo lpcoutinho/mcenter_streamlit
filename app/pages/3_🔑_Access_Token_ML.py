@@ -1,12 +1,13 @@
 # Importando bibliotecas
-import requests
 import json
-import time
-import re
 import os
-import streamlit as st
+import re
+import time
 
-from dotenv import load_dotenv, find_dotenv
+import requests
+from dotenv import find_dotenv, load_dotenv
+
+import streamlit as st
 
 load_dotenv()
 # load_dotenv(find_dotenv())
@@ -19,10 +20,10 @@ start_prog = time.time()
 
 clientId = CLIENT_ID
 secretKey = SCRET_KEY
-redirectURI =  REDIRECT_URI
+redirectURI = REDIRECT_URI
 
 st.header("Capturando Access Token do ML")
-auth_link = f'https://auth.mercadolivre.com.br/authorization?response_type=code&client_id={clientId}&redirect_uri={redirectURI}'
+auth_link = f"https://auth.mercadolivre.com.br/authorization?response_type=code&client_id={clientId}&redirect_uri={redirectURI}"
 
 f"""
 Clique no link {auth_link}
@@ -35,9 +36,9 @@ user_input = st.text_input("Digite a url gerado a partir do link:")
 st.write("Você digitou:", user_input)
 
 # Cole aqui o url gerado após a autorização
-url=user_input
+url = user_input
 
-match = re.search(r'code=(.*)', url)
+match = re.search(r"code=(.*)", url)
 
 if match:
     code = match.group(1)
@@ -45,13 +46,13 @@ if match:
 else:
     print("Nenhum valor encontrado entre 'code=' e '&state=' na string da URL.")
 
-### Refresh Token 
+### Refresh Token
 url = "https://api.mercadolibre.com/oauth/token"
 
-payload = f'grant_type=authorization_code&client_id={clientId}&client_secret={secretKey}&code={code}&redirect_uri={redirectURI}'
+payload = f"grant_type=authorization_code&client_id={clientId}&client_secret={secretKey}&code={code}&redirect_uri={redirectURI}"
 headers = {
-  'accept': 'application/json',
-  'content-type': 'application/x-www-form-urlencoded'
+    "accept": "application/json",
+    "content-type": "application/x-www-form-urlencoded",
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
@@ -59,20 +60,20 @@ response = requests.request("POST", url, headers=headers, data=payload)
 json_data = response.text
 data = json.loads(json_data)
 
-refresh_token = data.get('refresh_token')
+refresh_token = data.get("refresh_token")
 
 if refresh_token:
-    print('refresh_token: ',refresh_token)
+    print("refresh_token: ", refresh_token)
 else:
     print("O campo 'refresh_token' não foi encontrado no JSON.")
 
 ### Access token
 url = "https://api.mercadolibre.com/oauth/token"
 
-payload = f'grant_type=refresh_token&client_id={clientId}&client_secret={secretKey}&refresh_token={refresh_token}'
+payload = f"grant_type=refresh_token&client_id={clientId}&client_secret={secretKey}&refresh_token={refresh_token}"
 headers = {
-  'accept': 'application/json',
-  'content-type': 'application/x-www-form-urlencoded'
+    "accept": "application/json",
+    "content-type": "application/x-www-form-urlencoded",
 }
 
 response = requests.request("POST", url, headers=headers, data=payload)
@@ -82,17 +83,17 @@ print(response.text)
 json_data = response.text
 data = json.loads(json_data)
 
-access_token = data.get('access_token')
+access_token = data.get("access_token")
 
 # Atualiza o arquivo .env com o novo ACCESS_TOKEN
 env_path = find_dotenv()
-with open(env_path, 'r') as file:
+with open(env_path, "r") as file:
     lines = file.readlines()
 
-with open(env_path, 'w') as file:
+with open(env_path, "w") as file:
     for line in lines:
-        if line.startswith('ACCESS_TOKEN='):
+        if line.startswith("ACCESS_TOKEN="):
             line = f"ACCESS_TOKEN='{access_token}'\n"
         file.write(line)
 
-st.write('access_token:', access_token)
+st.write("access_token:", access_token)
