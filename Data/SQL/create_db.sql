@@ -59,4 +59,17 @@ CREATE TABLE "tiny_fulfillment" (
   "updated_at" timestamp
 );
 
+CREATE TABLE "tiny_stock_hist" (
+  "tiny_id" int,
+  "nome" varchar(150),
+  "sku_tiny" varchar(30),
+  "unidade" varchar(10),
+  "saldo_reservado" decimal,
+  "deposito_nome" varchar(150),
+  "deposito_desconsiderar" varchar(1),
+  "deposito_saldo" decimal,
+  "deposito_empresa" varchar(150),
+  "created_at" timestamp DEFAULT (now() at time zone 'utc')
+);
+
 ALTER TABLE "tiny_codes" ADD FOREIGN KEY ("ml_inventory_id") REFERENCES "tiny_ml_codes" ("ml_inventory_id");

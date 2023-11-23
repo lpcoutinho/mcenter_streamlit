@@ -1,0 +1,10 @@
+{"blocked_by": "PolicyAgent", "status": 403, "message": "At least one policy returned UNAUTHORIZED.", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "path": "/inventories/DSGP06967/stock/fulfillment"}
+{"status": 403, "message": "At least one policy returned UNAUTHORIZED.", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "blocked_by": "PolicyAgent", "path": "/inventories/DSGP06979/stock/fulfillment"}
+{"status": 403, "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "path": "/inventories/JJSZ06277/stock/fulfillment", "blocked_by": "PolicyAgent", "message": "At least one policy returned UNAUTHORIZED."}
+{"blocked_by": "PolicyAgent", "message": "At least one policy returned UNAUTHORIZED.", "path": "/inventories/DGCL82617/stock/fulfillment", "status": 403, "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES"}
+{"status": 403, "message": "At least one policy returned UNAUTHORIZED.", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "path": "/inventories/GCYF86172/stock/fulfillment", "blocked_by": "PolicyAgent"}
+{"path": "/inventories/SIZW84848/stock/fulfillment", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "message": "At least one policy returned UNAUTHORIZED.", "status": 403, "blocked_by": "PolicyAgent"}
+{"message": "At least one policy returned UNAUTHORIZED.", "blocked_by": "PolicyAgent", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "path": "/inventories/SOQF03130/stock/fulfillment", "status": 403}
+{"code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "path": "/inventories/ZRDQ91074/stock/fulfillment", "status": 403, "blocked_by": "PolicyAgent", "message": "At least one policy returned UNAUTHORIZED."}
+{"blocked_by": "PolicyAgent", "path": "/inventories/TAPQ85749/stock/fulfillment", "status": 403, "message": "At least one policy returned UNAUTHORIZED.", "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES"}
+{"status": 403, "code": "PA_UNAUTHORIZED_RESULT_FROM_POLICIES", "blocked_by": "PolicyAgent", "path": "/inventories/FRBW82060/stock/fulfillment", "message": "At least one policy returned UNAUTHORIZED."}
