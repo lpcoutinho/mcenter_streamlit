@@ -1,0 +1,7 @@
+[connections.postgresql]
+dialect = "postgresql"
+host = "host"
+port = "5432"
+database = "db_name"
+username = "db_user"
+password = "db_pass"
