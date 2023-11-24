@@ -1,5 +1,6 @@
 import os
 import time
+
 from dotenv import load_dotenv
 from loguru import logger
 from ml_consume import MeLiLoader

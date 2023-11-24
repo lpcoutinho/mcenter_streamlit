@@ -19,6 +19,8 @@ sudo crontab -e
 
 ### Edite
 ```
+* * * * * /home/ubuntu/mcenter_streamlit/app/pages/ml_consume/run.sh >> /home/ubuntu/mcenter_streamlit/cron_ml.txt  2>&1
+* * * * * /home/ubuntu/mcenter_streamlit/app/pages/tiny_consume/run.sh >> /home/ubuntu/mcenter_streamlit/cron_tiny.txt  2>&1
 ```
 
 # Rode o projeto

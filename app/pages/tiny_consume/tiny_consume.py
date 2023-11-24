@@ -49,9 +49,7 @@ class TinyLoader:
     def load_tiny_ids(self):
         logger.info(f"Buscando IDs de Produtos na API Tiny")
         try:
-            conn = psycopg2.connect(
-                **self.db_config
-            )
+            conn = psycopg2.connect(**self.db_config)
             query = "select tiny_id from tiny_fulfillment;"
             df_tiny_id = pd.read_sql_query(query, conn)
             conn.close()
@@ -60,11 +58,15 @@ class TinyLoader:
             )
             return df_tiny_id
         except psycopg2.Error as e:
-            logger.error(f"Ocorreu um erro no psycopg2 ao consultar a tabela tiny_fulfillment: {str(e)}")
+            logger.error(
+                f"Ocorreu um erro no psycopg2 ao consultar a tabela tiny_fulfillment: {str(e)}"
+            )
             return None
-        
+
         except Exception as e:
-            logger.error(f"Ocorreu um erro ao consultar a tabela tiny_fulfillment: {str(e)}")
+            logger.error(
+                f"Ocorreu um erro ao consultar a tabela tiny_fulfillment: {str(e)}"
+            )
             return None
 
     def process_json_list(self, json_list):
@@ -75,12 +77,14 @@ class TinyLoader:
             # Processar cada JSON na lista
             for json_str in json_list:
                 logger.info("Carregando lista Json")
-                json_data = json.loads(json_str)  # Transforma string JSON em objeto Python
+                json_data = json.loads(
+                    json_str
+                )  # Transforma string JSON em objeto Python
 
                 # Extrair a parte "produto" do JSON
                 logger.info("Extraindo dados dos produtos da lista Json")
                 produto = json_data["retorno"]["produto"]
-                depositos = produto['depositos']
+                depositos = produto["depositos"]
 
                 # Verifica se lista de depósitos está presente
                 logger.info("Extraindo dados de depósitos")
@@ -94,7 +98,9 @@ class TinyLoader:
 
                     # Concatena DataFrame temporário ao DataFrame principal
                     logger.info("Construindo DataFrame de Estoque")
-                    tiny_stock_df = pd.concat([tiny_stock_df, temp_df], ignore_index=True)
+                    tiny_stock_df = pd.concat(
+                        [tiny_stock_df, temp_df], ignore_index=True
+                    )
 
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             # Lidar com exceções específicas que podem ocorrer durante o processamento do JSON
@@ -124,7 +130,7 @@ class TinyLoader:
 
         logger.info("Dataframe construido!")
         return tiny_stock_df
-       
+
     def save_responses_txt(reponses, output_txt_path):
         try:
             # Escreve cada elemento da lista em uma linha do arquivo

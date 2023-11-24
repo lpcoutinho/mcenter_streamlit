@@ -5,9 +5,8 @@ import re
 import time
 
 import requests
-from dotenv import find_dotenv, load_dotenv
-
 import streamlit as st
+from dotenv import find_dotenv, load_dotenv
 
 
 # @st.cache_data(ttl=3600)

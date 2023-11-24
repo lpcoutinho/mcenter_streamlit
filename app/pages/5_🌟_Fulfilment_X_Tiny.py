@@ -4,11 +4,10 @@ import os
 import altair as alt
 import pandas as pd
 import psycopg2
+import streamlit as st
 from dotenv import load_dotenv
 from psycopg2 import sql
 from streamlit_js_eval import streamlit_js_eval
-
-import streamlit as st
 
 load_dotenv()
 
