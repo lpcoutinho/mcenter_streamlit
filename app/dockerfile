@@ -1,0 +1,13 @@
+FROM python:3.10.12
+EXPOSE 8501
+WORKDIR /app
+COPY . ./
+# COPY .streamlit/secrets.toml .streamlit/secrets.toml
+
+# COPY ./requirements.txt ./requirements.txt
+# COPY ...streamlit/secrets.toml /app/
+# COPY .streamlit/secrets.toml /app
+
+RUN pip3 install -r requirements.txt
+CMD streamlit run 1_📦_Produtos.py
+# CMD [streamlit run app/1_📦_Produtos.py]

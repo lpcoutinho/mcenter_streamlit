@@ -41,3 +41,5 @@ loader.insert_orders_data(df_orders)
 end_prog = time.time()  # Registra o tempo depois de toda aplicação
 elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
 logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
+
+python3 mcenter_streamlit/app/pages/ml_consume/routines.py
