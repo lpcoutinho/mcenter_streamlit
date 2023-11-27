@@ -34,6 +34,7 @@ st.title("Produtos a enviar ao Fulfillment")
 # # Selecionar data da pesquisa
 st.write("Defina o período da consulta")
 date_from = st.date_input(label="Data inicial")
+date_from = date_from - timedelta(days=1) # - 1 dia para caso o usuário selecione a data atual
 date_to = st.date_input(label="Data final")
 date_to = date_to + timedelta(days=1) # + 1 dia para pegar a data atual no DB
 
