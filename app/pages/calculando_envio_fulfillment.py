@@ -1,16 +1,16 @@
 # from pages.ml_consume.ml_consume import MeLiLoader
 # from pages.tiny_consume.tiny_consume import TinyLoader
-from dotenv import load_dotenv
 import os
-import streamlit as st
 import time
-
-from pandas import json_normalize
-import psycopg2
-from psycopg2 import sql
-import pandas as pd
 from datetime import datetime, timedelta
+
 import numpy as np
+import pandas as pd
+import psycopg2
+import streamlit as st
+from dotenv import load_dotenv
+from pandas import json_normalize
+from psycopg2 import sql
 
 load_dotenv()
 
@@ -32,21 +32,23 @@ db_config = {
 st.title("Produtos a enviar ao Fulfillment")
 
 # Selecionar data da pesquisa
-st.write('Defina o período da consulta')
-date_from = st.date_input(label='Data inicial')
-date_to = st.date_input(label='Data final')
+st.write("Defina o período da consulta")
+date_from = st.date_input(label="Data inicial")
+date_to = st.date_input(label="Data final")
 
-st.write('Defina a quantidade de dias para o cálculo de envio')
-input_days = st.number_input(label='Enviar produtos para os próximos x dias',step=1,value=30)
+st.write("Defina a quantidade de dias para o cálculo de envio")
+input_days = st.number_input(
+    label="Enviar produtos para os próximos x dias", step=1, value=30
+)
 
 # Converta as datas para strings no formato desejado
-date_from_str = date_from.strftime('%Y-%m-%d')
-date_to_str = date_to.strftime('%Y-%m-%d')
+date_from_str = date_from.strftime("%Y-%m-%d")
+date_to_str = date_to.strftime("%Y-%m-%d")
 
 
 # Converta as datas para formato reconhecido pelo streamlit
-date_from = date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
-date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+date_from = date_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
+date_to = datetime.strptime(date_to_str, "%Y-%m-%d").date()
 
 
 # Defina as datas de início e fim desejadas
@@ -68,11 +70,11 @@ date_to = datetime(ano_to, mes_to, dia_to).date()
 if st.button("Iniciar Consulta"):
     # Exibe uma mensagem enquanto a consulta está em andamento
     mensagem_aguarde = st.warning("Aguarde, a consulta está em andamento...")
-        
+
     # # Remove a mensagem de aviso e exibe os resultados
     mensagem_aguarde.empty()
     st.success("Consulta concluída com sucesso!")
-            
+
     # ### Historico de estoque
     # Buscando histórico de estoque na tabela
     try:
@@ -94,13 +96,12 @@ if st.button("Iniciar Consulta"):
 
     # datas consultadas, dias em que um produto pode ou não estar disponível
     df_stock["created_at"].value_counts().index.to_list()
-    
+
     # Ordenando stock por data
     # df_stock["created_at"] = pd.to_datetime(df_stock["created_at"])
     df_stock = df_stock.sort_values(by="created_at", ascending=False)
     df_stock["data"] = df_stock["created_at"].dt.date
     df_stock = df_stock.drop(["created_at"], axis=1)
-
 
     ## Cria coluna has_stock, se available_quantity <= 0, has_stock= False ##
     df_stock = df_stock.assign(has_stock=lambda x: x["available_quantity"] > 0)
@@ -110,12 +111,14 @@ if st.button("Iniciar Consulta"):
 
     # Dias em que produto esteve disponível
     #  Contando dias em que produto esteve disponível
-    days_available = df_stock.groupby("ml_inventory_id")["has_stock"].sum().reset_index()
+    days_available = (
+        df_stock.groupby("ml_inventory_id")["has_stock"].sum().reset_index()
+    )
     days_available = days_available.rename(columns={"has_stock": "days_available"})
 
     # Unindo DFs
     df_stock = df_stock.merge(days_available, on="ml_inventory_id", how="inner")
-    
+
     # data de hoje
     data_de_hoje = datetime.now().date() - timedelta(days=1)
     # data_de_hoje = datetime.now().date()
@@ -127,7 +130,7 @@ if st.button("Iniciar Consulta"):
         columns={"available_quantity": "available_quantity_today"}
     )
     # df_stock_today = df_stock.drop(['has_stock'], axis=1)
-    
+
     # st.write('Estoque ontem')
     # st.dataframe(df_stock_today, use_container_width=True)
 
@@ -159,7 +162,8 @@ if st.button("Iniciar Consulta"):
     df_orders = df_orders[df_orders["order_status"] == "paid"]
     df_orders = df_orders[df_orders["payment_status"] == "approved"]
     df_orders = df_orders.drop(
-        ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"], axis=1
+        ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"],
+        axis=1,
     )
     df_orders.rename(columns={"quantity": "sales_quantity"}, inplace=True)
 
@@ -176,25 +180,27 @@ if st.button("Iniciar Consulta"):
 
     # calcular total de vendas por ml_code e seller_sku no periodo
     total_sales_by_filter = (
-        df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"].sum().reset_index()
+        df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"]
+        .sum()
+        .reset_index()
     )
     total_sales_by_filter.rename(
         columns={"sales_quantity": "total_sales_quantity"}, inplace=True
     )
-
 
     # Acrescentando total de vendas ao DF
     df_total_sales = pd.merge(
         df_orders, total_sales_by_filter, on=["ml_code", "seller_sku"], how="inner"
     )
 
-
-    df_total_sales = df_total_sales.drop(["sales_quantity", "shipping_id", "data"], axis=1)
+    df_total_sales = df_total_sales.drop(
+        ["sales_quantity", "shipping_id", "data"], axis=1
+    )
     df_total_sales = df_total_sales.drop_duplicates()
 
     # st.write('Total de vendas')
     # st.dataframe(df_total_sales, use_container_width=True)
-    
+
     # #### Buscando Produtos
     # Buscando dados de produtos na tabela tiny_fulfillment
     try:
@@ -220,10 +226,10 @@ if st.button("Iniciar Consulta"):
 
     # st.write('FulxTiny')
     # st.dataframe(df_codes, use_container_width=True)
-    
+
     # ### Produtos + Dias disponíveis
     prod_day = pd.merge(df_codes, df_stock_today, on="ml_inventory_id", how="inner")
-    
+
     # st.write('Produtos + Dias disponíveis')
     # st.dataframe(prod_day, use_container_width=True)
 
@@ -253,16 +259,18 @@ if st.button("Iniciar Consulta"):
     ]
 
     df_sales = df_sales[cols]
-    
+
     # st.write('df_sales')
     # st.dataframe(df_sales, use_container_width=True)
-    
+
     # ### Calculando métricas
     # media de produtos disponiveis no período
     df_sales["media_prod_days_available"] = (
         df_sales["total_sales_quantity"] / df_sales["days_available"]
     )
-    df_sales["media_prod_days_available"] = df_sales["media_prod_days_available"].fillna(0)
+    df_sales["media_prod_days_available"] = df_sales[
+        "media_prod_days_available"
+    ].fillna(0)
 
     days = input_days
 
@@ -280,6 +288,5 @@ if st.button("Iniciar Consulta"):
     )
     df_sales["today_send_fulfillment"] = df_sales["today_send_fulfillment"].fillna(0)
 
-
-    st.write('Metricas')
+    st.write("Metricas")
     st.dataframe(df_sales, use_container_width=True)
