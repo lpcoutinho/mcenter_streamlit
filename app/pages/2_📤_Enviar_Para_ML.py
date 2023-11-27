@@ -4,7 +4,6 @@ import os
 import time
 from datetime import datetime, timedelta
 
-import masking.maskstring as msk
 import numpy as np
 import pandas as pd
 import psycopg2
