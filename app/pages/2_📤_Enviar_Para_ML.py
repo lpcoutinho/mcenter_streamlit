@@ -35,6 +35,7 @@ st.title("Produtos a enviar ao Fulfillment")
 st.write("Defina o período da consulta")
 date_from = st.date_input(label="Data inicial")
 date_to = st.date_input(label="Data final")
+date_to = date_to + timedelta(days=1) # + 1 dia para pegar a data atual no DB
 
 # date_from = st.text_input(label='Data inicial, digite apenas números',placeholder='01112023',max_chars=8)
 # date_to = st.text_input(label='Data final, digite apenas números',placeholder='30112023')
@@ -49,7 +50,7 @@ input_days = st.number_input(
 # date_to_str = date_to.strftime('%Y-%m-%d')
 # date_from = datetime.strptime(date_from, '%d%m%Y').date()
 # date_to = datetime.strptime(date_to, '%d%m%Y').date()
-
+# date_to = date_to + timedelta(days=1) # + 1 dia para pegar a data atual no DB
 # st.write(date_from)
 
 # # Converta as datas para formato reconhecido pelo streamlit
