@@ -32,17 +32,17 @@ db_config = {
 st.title("Produtos a enviar ao Fulfillment")
 
 # Selecionar data da pesquisa
-st.write("Defina o período da consulta")
+st.header("Defina o período da consulta", divider='grey')
 date_from = st.date_input(label="Data inicial")
 date_t = st.date_input(label="Data final")
 date_to = date_t + timedelta(days=1)  # + 1 dia para pegar a data atual no DB
 
-st.write(f"Perído a consultar vai de {date_from} até {date_t}")
+st.caption(f"Perído a consultar vai de {date_from} até {date_t}")
 
 # date_from = st.text_input(label='Data inicial, digite apenas números',placeholder='01112023',max_chars=8)
 # date_to = st.text_input(label='Data final, digite apenas números',placeholder='30112023')
 
-st.write("Defina a quantidade de dias para o cálculo de envio")
+st.header("Dias para o cálculo de envio", divider='grey')
 input_days = st.number_input(
     label="Enviar produtos para os próximos x dias", step=1, value=30
 )
@@ -63,6 +63,9 @@ if st.button("Iniciar Consulta"):
 
         # sql_query = f"SELECT * FROM fulfillment_stock_hist WHERE created_at BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
         sql_query = f"SELECT * FROM fulfillment_stock_hist WHERE created_at BETWEEN '{date_from}' AND '{date_to}'"
+        
+        st.subheader('Consulta SQL')
+        st.write(sql_query)
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
@@ -113,77 +116,110 @@ if st.button("Iniciar Consulta"):
     )
     # df_stock_today = df_stock.drop(['has_stock'], axis=1)
 
-    st.write("Estoque de produtos do fulfillment")
+    
+    st.subheader("Estoque de produtos do fulfillment")
+    df_stock = df_stock.drop_duplicates()
+    st.caption(f"Tamanho do dataframe: {df_stock.shape}")
     st.dataframe(df_stock, use_container_width=True)
 
-    st.write("Disponiblidade dos produtos hoje e dias disponíveis")
+    
+    st.subheader("Disponiblidade dos produtos hoje e dias disponíveis")
     # df_available = df_stock_today.drop(['available_quantity_today'], axis=1)
     # st.dataframe(df_available, use_container_width=True)
+    df_stock_today = df_stock_today.drop_duplicates()
+    
+    st.caption(f"Tamanho do dataframe: {df_stock_today.shape}")
     st.dataframe(df_stock_today, use_container_width=True)
 
     # SIZW84848
 
-    #     # ### Buscando hitorico de orders no BD
-    #     # Buscando histórico de vendas na tabela ml_orders_hist para o período definido
-    #     try:
-    #         conn = psycopg2.connect(**db_config)
+    ## Buscando hitorico de orders no BD
+    # Buscando histórico de vendas na tabela ml_orders_hist para o período definido
+    
+    date_from_datetime64 = pd.to_datetime(date_from).date()
+    date_to_datetime64 = pd.to_datetime(date_to).date()
+    date_from_s = date_from_datetime64.strftime('%Y-%m-%d')
+    date_to_s = date_to_datetime64.strftime('%Y-%m-%d')
 
-    #         # Construa a consulta SQL com a condição de data
-    #         sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
-    #         # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
-    #         # Execute a consulta e leia os dados em um DataFrame
-    #         df_orders = pd.read_sql(sql_query, conn)
+    try:
+        conn = psycopg2.connect(**db_config)
 
-    #     except psycopg2.Error as e:
-    #         print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
-    #         # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        # Construa a consulta SQL com a condição de data
+        # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
+        # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from_s}' AND '{date_to_s}'"
+        sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        st.subheader('Consulta SQL')
+        st.write(sql_query)
+        # Execute a consulta e leia os dados em um DataFrame
+        df_orders = pd.read_sql(sql_query, conn)
 
-    #     except Exception as e:
-    #         print(f"Erro ao consultar ml_orders_hist: {e}")
-    #         # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
+    except psycopg2.Error as e:
+        print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
 
-    #     finally:
-    #         if conn is not None:
-    #             conn.close()
+    except Exception as e:
+        print(f"Erro ao consultar ml_orders_hist: {e}")
+        # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
 
-    #     # filtros
-    #     df_orders = df_orders[df_orders["fulfilled"] == True]
-    #     df_orders = df_orders[df_orders["order_status"] == "paid"]
-    #     df_orders = df_orders[df_orders["payment_status"] == "approved"]
-    #     df_orders = df_orders.drop(
-    #         ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"], axis=1
-    #     )
-    #     df_orders.rename(columns={"quantity": "sales_quantity"}, inplace=True)
+    finally:
+        if conn is not None:
+            conn.close()
 
-    #     # Ordenando orders por data
-    #     df_orders = df_orders.sort_values(by="date_closed", ascending=False)
-    #     df_orders["data"] = df_orders["date_closed"].dt.date
-    #     df_orders = df_orders.drop(["date_closed"], axis=1)
-    #     df_orders = df_orders.drop_duplicates()
+    # filtros
+    df_orders = df_orders[df_orders["fulfilled"] == True]
+    df_orders = df_orders[df_orders["order_status"] == "paid"]
+    df_orders = df_orders[df_orders["payment_status"] == "approved"]
+    df_orders = df_orders.drop(
+        ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"], axis=1
+    )
+    df_orders.rename(columns={"quantity": "sales_quantity"}, inplace=True)
 
-    #     # st.write('Vendas')
-    #     # st.dataframe(df_orders, use_container_width=True)
+    # # Ordenando orders por data
+    # df_orders = df_orders.sort_values(by="date_closed", ascending=False)
+    # df_orders["data"] = df_orders["date_closed"].dt.date()
+    # df_orders = df_orders.drop(["date_closed"], axis=1)
+    # df_orders["data"] = df_orders["date_approved"].dt.date
 
-    #     # #### Total de vendas por ml_code e seller_sku
+    df_orders = df_orders.drop_duplicates()
 
-    #     # calcular total de vendas por ml_code e seller_sku no periodo
-    #     total_sales_by_filter = (
-    #         df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"].sum().reset_index()
-    #     )
-    #     total_sales_by_filter.rename(
-    #         columns={"sales_quantity": "total_sales_quantity"}, inplace=True
-    #     )
+    st.subheader(f'Vendas entre {date_from} e {date_to}')
+    st.caption(f"Filtros: 'fulfilled' = True; 'order_status' = 'paid'; 'payment_status' = 'approved'")
+    st.caption(f"Tamanho do dataframe: {df_orders.shape}")
+    st.dataframe(df_orders, use_container_width=True)
 
-    #     # Acrescentando total de vendas ao DF
-    #     df_total_sales = pd.merge(
-    #         df_orders, total_sales_by_filter, on=["ml_code", "seller_sku"], how="inner"
-    #     )
+    # #### Total de vendas por ml_code e seller_sku
 
-    #     df_total_sales = df_total_sales.drop(["sales_quantity", "shipping_id", "data"], axis=1)
-    #     df_total_sales = df_total_sales.drop_duplicates()
+    # calcular total de vendas por ml_code e seller_sku no periodo
+    # total_sales_by_filter = (
+    #     df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"].sum().reset_index()
+    # )
+    total_sales_by_filter = (
+        df_orders.groupby(["ml_code", "seller_sku","variation_id"])["sales_quantity"].sum().reset_index()
+    )
+    total_sales_by_filter.rename(
+        columns={"sales_quantity": "total_sales_quantity"}, inplace=True
+    )
+   
+    
+    # # Acrescentando total de vendas ao DF
+    # df_total_sales = pd.merge(
+    #     df_orders, total_sales_by_filter, on=["ml_code", "seller_sku"], how="inner"
+    # )
 
-    #     # st.write('Total de vendas')
-    #     # st.dataframe(df_total_sales, use_container_width=True)
+    # df_total_sales = df_total_sales.drop(["sales_quantity", "shipping_id", "data"], axis=1)
+    # df_total_sales = df_total_sales.drop_duplicates()
+
+    st.subheader('Total de vendas')
+    st.caption(f"Tamanho do dataframe: {total_sales_by_filter.shape}")
+    st.caption(total_sales_by_filter.columns)
+    st.dataframe(total_sales_by_filter, use_container_width=True)
+    
+    # st.subheader('Total de vendas Final')
+    # st.caption(f"Tamanho do dataframe: {df_total_sales.shape}")
+    # st.caption(df_total_sales.columns)
+    # st.dataframe(df_total_sales, use_container_width=True)
+    
+    st.write("Se cada linha é uma venda, sales_quantity é a quantidade vendida.")
 
     #     # #### Buscando Produtos
     #     # Buscando dados de produtos na tabela tiny_fulfillment
