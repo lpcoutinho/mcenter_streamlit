@@ -221,31 +221,34 @@ if st.button("Iniciar Consulta"):
     
     st.write("Se cada linha é uma venda, sales_quantity é a quantidade vendida.")
 
-    #     # #### Buscando Produtos
-    #     # Buscando dados de produtos na tabela tiny_fulfillment
-    #     try:
-    #         conn = psycopg2.connect(**db_config)
+    # #### Buscando Produtos
+    # Buscando dados de produtos na tabela tiny_fulfillment
+    
+    try:
+        conn = psycopg2.connect(**db_config)
 
-    #         sql_query = "SELECT * FROM tiny_fulfillment"
-    #         df_codes = pd.read_sql(sql_query, conn)
-    #     except psycopg2.Error as e:
-    #         # logger.error(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
-    #         print(f"Erro do psycopg2 ao consultar tiny_fulfillment: {e}")
+        sql_query = "SELECT * FROM tiny_fulfillment"
+        st.subheader('Consulta SQL')
+        st.write(sql_query)
+        df_codes = pd.read_sql(sql_query, conn)
+    except psycopg2.Error as e:
+        # logger.error(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar tiny_fulfillment: {e}")
 
-    #     except Exception as e:
-    #         # logger.error(f"Erro ao consultar tabela tiny_fulfillment: {e}")
-    #         print(f"Erro ao consultar tabela tiny_fulfillment: {e}")
+    except Exception as e:
+        # logger.error(f"Erro ao consultar tabela tiny_fulfillment: {e}")
+        print(f"Erro ao consultar tabela tiny_fulfillment: {e}")
 
-    #     finally:
-    #         if conn is not None:
-    #             conn.close()
+    finally:
+        if conn is not None:
+            conn.close()
 
-    #     df_codes["ml_code"] = df_codes["ml_code"].apply(lambda x: "MLB" + str(x))
-    #     df_codes.rename(columns={"quantity": "total_sales_quantity"}, inplace=True)
-    #     df_codes = df_codes.drop(["mcenter_id", "created_at", "updated_at"], axis=1)
+    df_codes["ml_code"] = df_codes["ml_code"].apply(lambda x: "MLB" + str(x))
+    df_codes.rename(columns={"quantity": "total_sales_quantity"}, inplace=True)
+    df_codes = df_codes.drop(["mcenter_id", "created_at", "updated_at"], axis=1)
 
-    #     # st.write('FulxTiny')
-    #     # st.dataframe(df_codes, use_container_width=True)
+    st.subheader('FulxTiny')
+    st.dataframe(df_codes, use_container_width=True)
 
     #     # ### Produtos + Dias disponíveis
     #     prod_day = pd.merge(df_codes, df_stock_today, on="ml_inventory_id", how="inner")
