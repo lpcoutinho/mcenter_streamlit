@@ -147,7 +147,7 @@ if st.button("Iniciar Consulta"):
         # Construa a consulta SQL com a condição de data
         # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
         # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from_s}' AND '{date_to_s}'"
-        sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to};'"
         st.subheader('Consulta SQL')
         st.write(sql_query)
         # Execute a consulta e leia os dados em um DataFrame
