@@ -1,11 +1,11 @@
 import io
+import os
 
 import altair as alt
 import pandas as pd
-import streamlit as st
 import psycopg2
+import streamlit as st
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -30,11 +30,13 @@ st.set_page_config(page_title="Produtos - Tiny", page_icon="", layout="wide")
 # # @st.cache_data
 # df = conn.query("SELECT * FROM tiny_products;", ttl="1m")
 
+
 def fetch_data(query):
     conn = psycopg2.connect(**db_config)
     df = pd.read_sql_query(query, conn)
     conn.close()
     return df
+
 
 # Consulta SQL
 query = "SELECT * FROM tiny_products;"
