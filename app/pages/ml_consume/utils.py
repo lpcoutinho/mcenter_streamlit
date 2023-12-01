@@ -39,3 +39,35 @@ def save_json_list_to_txt(json_list, output_file):
         for json_data in json_list:
             json.dump(json_data, file)
             file.write("\n")
+
+
+def condf(df, coluna, valor):
+    """
+    Consulta um DataFrame com base em uma coluna e valor específicos.
+
+    Parâmetros:
+    - df: DataFrame a ser consultado.
+    - coluna: Nome da coluna para a condição de consulta.
+    - valor: Valor desejado na coluna.
+
+    Retorna:
+    Um DataFrame contendo apenas as linhas que atendem à condição.
+    """
+    resultado = df[df[coluna] == valor]
+    return resultado
+
+
+def condf_date(df, coluna_data, data_pesquisada):
+    """
+    Consulta um DataFrame com base em uma coluna de datas.
+
+    Parâmetros:
+    - df: DataFrame a ser consultado.
+    - coluna_data: Nome da coluna de datas.
+    - data_pesquisada: Data desejada para a consulta.
+
+    Retorna:
+    Um DataFrame contendo apenas as linhas que correspondem à data pesquisada.
+    """
+    resultado = df[pd.to_datetime(df[coluna_data]).dt.date == data_pesquisada]
+    return resultado

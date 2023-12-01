@@ -72,4 +72,15 @@ CREATE TABLE "tiny_stock_hist" (
   "created_at" timestamp DEFAULT (now() at time zone 'utc')
 );
 
+CREATE TABLE "items" (
+  "ml_code" varchar(30),
+  "inventory_id" varchar(30),
+  "value_name" varchar(30),
+  "status" varchar(30),
+  "catalog_listing" bool,
+  "created_at" timestamp DEFAULT (now() at time zone 'utc'),
+  "updated_at" timestamp DEFAULT (now() at time zone 'utc')
+);
+
+
 ALTER TABLE "tiny_codes" ADD FOREIGN KEY ("ml_inventory_id") REFERENCES "tiny_ml_codes" ("ml_inventory_id");
