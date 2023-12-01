@@ -1,19 +1,20 @@
 import json
+import math
 import os
 import time
-import psycopg2
-from psycopg2 import sql
-import math
-import pandas as pd
-import requests
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
+
 import numpy as np
+import pandas as pd
+import psycopg2
+import requests
 import streamlit
+from dotenv import load_dotenv
 from loguru import logger
+from psycopg2 import sql
+
 
 def import_data_to_db():
-
     logger.add(
         "Data/Output/Log/ml_log.log",
         rotation="10 MB",
@@ -29,7 +30,6 @@ def import_data_to_db():
     POSTGRES_DB = os.getenv("POSTGRES_DB")
     POSTGRES_USER = os.getenv("POSTGRES_USER")
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-
 
     db_config = {
         "host": HOST,
@@ -85,7 +85,6 @@ def import_data_to_db():
     logger.info(f"Total esperado de dados: {total_data}")
     logger.info(f"Total de dados coletados: {len(json_list)}")
 
-
     # buscando de itens em json
     json_list_item = []
     c = 1
@@ -114,19 +113,18 @@ def import_data_to_db():
     logger.info(f"Tamanho da lista de itens: {len(json_list_item)}")
 
     # Salvando a lista de itens
-    caminho_arquivo = '../../Data/Output/lista_itens.json'
+    caminho_arquivo = "../../Data/Output/lista_itens.json"
 
-    with open(caminho_arquivo, 'w') as arquivo:
+    with open(caminho_arquivo, "w") as arquivo:
         json.dump(json_list_item, arquivo)
 
-    with open(caminho_arquivo, 'r') as arquivo:
+    with open(caminho_arquivo, "r") as arquivo:
         json_list_item = json.load(arquivo)
 
     df = pd.DataFrame(json_list_item)
 
     logger.info(f"Tamanho do dataframe de itens: {df.shape}")
     df.sample()
-
 
     # pegando dados em attributes
     # attributes: SELLER_SKU
@@ -143,32 +141,38 @@ def import_data_to_db():
         catalog_listing = item["catalog_listing"]
         logistic_type = item["shipping"]["logistic_type"]
         item_relations = item["item_relations"]
-        
+
         # Procurar em "attributes" onde "id" é "SELLER_SKU"
-        seller_sku_entry = next((attr for attr in item["attributes"] if attr["id"] == "SELLER_SKU"), None)
+        seller_sku_entry = next(
+            (attr for attr in item["attributes"] if attr["id"] == "SELLER_SKU"), None
+        )
 
         # Pegar "value_name" e "value_id" se a entrada existir, caso contrário, definir como None
-        attribute_value_name = seller_sku_entry["value_name"] if seller_sku_entry else None
+        attribute_value_name = (
+            seller_sku_entry["value_name"] if seller_sku_entry else None
+        )
         attribute_value_id = seller_sku_entry["value_id"] if seller_sku_entry else None
 
         # attribute_value_name = item["attributes"][0]["value_name"]
         # attribute_value_id = item["attributes"][0]["value_id"]
 
         # Adicionar os resultados_attributes à lista
-        resultados_attributes.append({
-            "ml_code": first_id,
-            "inventory_id": inventory_id,
-            # "logistic_type": logistic_type,
-            # "sku": attribute_value_name,
-            "status": status,
-            "variations": variations,
-            # "attribute_value_id": attribute_value_id,
-            # "catalog_product_id": catalog_product_id,
-            # "seller_custom_field": seller_custom_field,
-            "catalog_listing": catalog_listing,
-            # "item_relations": item_relations
-        })
-        
+        resultados_attributes.append(
+            {
+                "ml_code": first_id,
+                "inventory_id": inventory_id,
+                # "logistic_type": logistic_type,
+                # "sku": attribute_value_name,
+                "status": status,
+                "variations": variations,
+                # "attribute_value_id": attribute_value_id,
+                # "catalog_product_id": catalog_product_id,
+                # "seller_custom_field": seller_custom_field,
+                "catalog_listing": catalog_listing,
+                # "item_relations": item_relations
+            }
+        )
+
     df_sku = pd.DataFrame(resultados_attributes)
 
     # Exibir os resultados
@@ -176,9 +180,8 @@ def import_data_to_db():
     # logger.info(df_sku.shape)
     # df_sku.sample()
 
-
     # pegando dados em variations
-    # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id 
+    # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id
     resultados_variations = []
 
     for item in json_list_item:
@@ -192,40 +195,54 @@ def import_data_to_db():
             variation_id = variacao.get("id")
             variation_seller_sku = variacao.get("seller_custom_field")
             variation_inventory_id = variacao.get("inventory_id")
-            attribute_combination = variacao.get("attribute_combinations", [{}])[0]  
+            attribute_combination = variacao.get("attribute_combinations", [{}])[0]
             value_id = attribute_combination.get("value_id")
             value_name = attribute_combination.get("value_name")
-            item_relations = attribute_combination.get("item_relations", [{}])[0]  
-            
+            item_relations = attribute_combination.get("item_relations", [{}])[0]
 
             # Adicionar os resultados_variations à lista
-            resultados_variations.append({
-                "ml_code": first_id,
-                "inventory_id": inventory_id,
-                # "logistic_type": logistic_type,
-                "variation_id": variation_id,
-                # "value_id": value_id,
-                "value_name": value_name,
-                # "var_seller_sku": variation_seller_sku,
-                "variation_inventory_id": variation_inventory_id,
-                # "item_relations":item_relations,
-            })
-            
+            resultados_variations.append(
+                {
+                    "ml_code": first_id,
+                    "inventory_id": inventory_id,
+                    # "logistic_type": logistic_type,
+                    "variation_id": variation_id,
+                    # "value_id": value_id,
+                    "value_name": value_name,
+                    # "var_seller_sku": variation_seller_sku,
+                    "variation_inventory_id": variation_inventory_id,
+                    # "item_relations":item_relations,
+                }
+            )
+
     df_variations = pd.DataFrame(resultados_variations)
 
-
     # Unindo as duas tabelas
-    df_sku_var = pd.merge(df_sku, df_variations, left_on=['ml_code','inventory_id'], right_on=['ml_code','inventory_id'], how='left')
-    df_sku_var = df_sku_var.drop(['variations','variation_id'], axis=1)
+    df_sku_var = pd.merge(
+        df_sku,
+        df_variations,
+        left_on=["ml_code", "inventory_id"],
+        right_on=["ml_code", "inventory_id"],
+        how="left",
+    )
+    df_sku_var = df_sku_var.drop(["variations", "variation_id"], axis=1)
     df_sku_var
 
     # #### *se variation_inventory_id = None -> variation_inventory_id == inventory_id && remove inventory_id && variation_inventory_id rename to inventory_id*
-    df_sku_var['variation_inventory_id'].fillna(df_sku_var['inventory_id'], inplace=True)
+    df_sku_var["variation_inventory_id"].fillna(
+        df_sku_var["inventory_id"], inplace=True
+    )
 
     # Editando tabela
-    cols = ['ml_code', 'variation_inventory_id','value_name', 'status', 'catalog_listing']
+    cols = [
+        "ml_code",
+        "variation_inventory_id",
+        "value_name",
+        "status",
+        "catalog_listing",
+    ]
     df_sku_var = df_sku_var[cols]
-    df_sku_var = df_sku_var.rename(columns={'variation_inventory_id':'inventory_id'})
+    df_sku_var = df_sku_var.rename(columns={"variation_inventory_id": "inventory_id"})
 
     logger.info(f"Tamanho do dataframe final: {df_sku_var.shape}")
 
@@ -245,7 +262,7 @@ def import_data_to_db():
                 row["inventory_id"],
                 row["value_name"],
                 row["status"],
-                row["catalog_listing"]
+                row["catalog_listing"],
             ),
         )
 
@@ -259,5 +276,6 @@ def import_data_to_db():
     end_prog = time.time()  # Registra o tempo depois de toda aplicação
     elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
+
 
 import_data_to_db()
