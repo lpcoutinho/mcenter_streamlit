@@ -185,9 +185,9 @@ class TinyLoader:
         except Exception as e:
             logger.error(f"Erro ao construir df_tiny_stock: {e}")
 
-    def insert_tiny_stock_db(self, df, db_config):
+    def insert_tiny_stock_db(self, df):
         try:
-            conn = psycopg2.connect(**db_config)
+            conn = psycopg2.connect(**self.db_config)
             cursor = conn.cursor()
             n = 1
 
@@ -221,9 +221,9 @@ class TinyLoader:
         except Exception as e:
             logger.info(f"Ocorreu um erro: {str(e)}")
 
-    def get_tiny_stock_hist(self, db_config):
+    def get_tiny_stock_hist(self):
         try:
-            conn = psycopg2.connect(**db_config)
+            conn = psycopg2.connect(**self.db_config)
             sql_query = "SELECT * FROM tiny_stock_hist"
             df_tiny_stock = pd.read_sql(sql_query, conn)
         except psycopg2.Error as e:
@@ -272,7 +272,7 @@ class TinyLoader:
 
         df_tiny_id = self.process_json_list(responses)
 
-        self.insert_tiny_stock_db(df_tiny_id, self.db_config)
+        self.insert_tiny_stock_db(df_tiny_id)
 
 
 # if __name__ == "__main__":

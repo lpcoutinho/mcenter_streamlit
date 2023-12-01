@@ -37,6 +37,7 @@ from tiny_consume import TinyLoader
 start_prog = time.time()  # Registra o inicio da aplicação
 
 loader = TinyLoader(db_config, token, tiny_format)
+# loader.get_tiny_stock_hist()
 loader.get_tiny_stock()
 
 end_prog = time.time()  # Registra o tempo depois de toda aplicação
