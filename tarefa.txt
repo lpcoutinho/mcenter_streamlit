@@ -1,29 +1,3 @@
-Envio ao Fulfillmente
-https://api.mercadolibre.com/stock/fulfillment/operations/search?seller_id=233632476&inventory_id=UIUW89800&limit=1000&type=SALE_CONFIRMATION
-
-contar produtos em transferência e somar ao total para do estoque atual
-
-1 - pegar produtos em modelo ful
-2 - pesquisar cada ml_id para verificar quais existem catálogo. encontrado em "item_relations": [
-        {
-            "id": "MLB3461876520",
-            "variation_id": null,
-            "stock_relation": 1
-        }
-3 - relacionar mlb do ful + sku com o id anterior + sku
-
-#############################
-
-eu como desenvolvedor preciso consultar e paginar diariamente este endpoint:
-https://api.mercadolibre.com/sites/MLB/search?seller_id=233632476&logistic_type=fulfillment&limit=50&offset=50
-
-popular uma tabela com códigos de anúncio(MLB...), variation_id(quando houver), inventory_id;
-pegar a quantidade de estoque atual do fulfillment, available_quantity e  "not_available_detail": [ {"status": "transfer",}]; (somar transfer ao available_quantity)
-relacionar com dados de venda por um período pré-determinado pelo usuário;
-calcular envio
-retorno duas tabelas, uma tabela com o envio e outra com o que não foi possível calcular(falta de estoque)
-
-atualizar tabela tiny_fulfillment com anúncio(MLB...), variation_id(quando houver), inventory_id. 
-Neste endpoint:
-https://api.mercadolibre.com/items/MLB...
-consultar "variations" e para cada id de variação pegar "value_name" e preencher na coluna var_code da tabela tiny_fulfillment
+consultar orders por variation_id e ml_code. caso variation_id não exista apenas ml_code é o suficiente;
+contar quais itens e quantos foram vendidos;
+calcular envio para fulfillment e somar produtos em transerência ao estoque atual.

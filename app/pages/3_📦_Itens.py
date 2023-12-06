@@ -1,28 +1,28 @@
 import io
-import os
-import requests
-import math
-from datetime import datetime, timedelta
-import time
-from psycopg2 import sql
-import numpy as np
-
 import json
+import math
+import os
+import time
+from datetime import datetime, timedelta
+
 import altair as alt
+import numpy as np
 import pandas as pd
 import psycopg2
+import requests
 import streamlit as st
 from dotenv import load_dotenv
 from loguru import logger
+from psycopg2 import sql
 
 # from ml_consume import get_Itens
 # from ...ml_consume import get_Itens
 
 logger.add(
-        "Data/Output/Log/ml_log.log",
-        rotation="10 MB",
-        format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
-    )
+    "Data/Output/Log/ml_log.log",
+    rotation="10 MB",
+    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
+)
 
 
 load_dotenv(override=True)
@@ -85,11 +85,11 @@ with col1:
         data=excel_buffer.read(),
         file_name="items.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary"
+        type="primary",
     )
 
 with col2:
-    if st.button('Atualizar banco de dados',type="primary"):
+    if st.button("Atualizar banco de dados", type="primary"):
         start_prog = time.time()  # Registra o inicio da aplicação
 
         load_dotenv(override=True)
@@ -183,15 +183,14 @@ with col2:
 
         # Salvando a lista de itens
         caminho_arquivo = "Data/Output/lista_itens.json"
-        
+
         # Abre o arquivo em modo de escrita ('w' para escrever, 'a' para anexar)
-        with open(caminho_arquivo, 'w') as arquivo:
+        with open(caminho_arquivo, "w") as arquivo:
             # Escreve no arquivo
-            arquivo.write('Olá, este é um exemplo de conteúdo para o arquivo.')
+            arquivo.write("Olá, este é um exemplo de conteúdo para o arquivo.")
 
         # Mensagem indicando que a escrita foi concluída
-        print('Conteúdo foi escrito no arquivo com sucesso.')
-
+        print("Conteúdo foi escrito no arquivo com sucesso.")
 
         with open(caminho_arquivo, "w") as arquivo:
             json.dump(json_list_item, arquivo)
@@ -222,14 +221,17 @@ with col2:
 
             # Procurar em "attributes" onde "id" é "SELLER_SKU"
             seller_sku_entry = next(
-                (attr for attr in item["attributes"] if attr["id"] == "SELLER_SKU"), None
+                (attr for attr in item["attributes"] if attr["id"] == "SELLER_SKU"),
+                None,
             )
 
             # Pegar "value_name" e "value_id" se a entrada existir, caso contrário, definir como None
             attribute_value_name = (
                 seller_sku_entry["value_name"] if seller_sku_entry else None
             )
-            attribute_value_id = seller_sku_entry["value_id"] if seller_sku_entry else None
+            attribute_value_id = (
+                seller_sku_entry["value_id"] if seller_sku_entry else None
+            )
 
             # attribute_value_name = item["attributes"][0]["value_name"]
             # attribute_value_id = item["attributes"][0]["value_id"]
@@ -320,7 +322,9 @@ with col2:
             "catalog_listing",
         ]
         df_sku_var = df_sku_var[cols]
-        df_sku_var = df_sku_var.rename(columns={"variation_inventory_id": "inventory_id"})
+        df_sku_var = df_sku_var.rename(
+            columns={"variation_inventory_id": "inventory_id"}
+        )
 
         logger.info(f"Tamanho do dataframe final: {df_sku_var.shape}")
 
@@ -350,7 +354,7 @@ with col2:
         # cursor.close()
         # conn.close()
         # logger.info("Dados inseridos com sucesso!")
-        
+
         # Consulta tabela items do db
         try:
             conn = psycopg2.connect(**db_config)
@@ -364,57 +368,71 @@ with col2:
 
         dx = df_items.copy()
         dy = df_sku_var.copy()
-        
+
         # Editando DFs
-        dx = dx.drop(columns=["created_at", "updated_at"]) # remove linhas de data
-        dx.replace("NaN", np.nan, inplace=True) # altera de strin para NaN
-        dx = dx.astype(str) # altera para tipo string
+        dx = dx.drop(columns=["created_at", "updated_at"])  # remove linhas de data
+        dx.replace("NaN", np.nan, inplace=True)  # altera de strin para NaN
+        dx = dx.astype(str)  # altera para tipo string
         dy = dy.astype(str)
-            
+
         # Merge com base nas colunas ml_code e inventory_id
-        merged_df = pd.merge(dy, dx, on=['ml_code', 'inventory_id'], how='inner', suffixes=('_sku_var', '_items'))
+        merged_df = pd.merge(
+            dy,
+            dx,
+            on=["ml_code", "inventory_id"],
+            how="inner",
+            suffixes=("_sku_var", "_items"),
+        )
 
         # Linhas com valores diferentes
         different_rows = merged_df[
-            (merged_df['value_name_sku_var'] != merged_df['value_name_items']) |
-            (merged_df['status_sku_var'] != merged_df['status_items']) |
-            (merged_df['catalog_listing_sku_var'] != merged_df['catalog_listing_items'])
+            (merged_df["value_name_sku_var"] != merged_df["value_name_items"])
+            | (merged_df["status_sku_var"] != merged_df["status_items"])
+            | (
+                merged_df["catalog_listing_sku_var"]
+                != merged_df["catalog_listing_items"]
+            )
         ]
-        
+
         # Compare os DataFrames
         identicos = dx.equals(dy)
         # Exiba o resultado
         logger.info("Os DataFrames são idênticos:", identicos)
-        
+
         # Encontrar diferenças usando merge
-        diferencas = pd.merge(dx, dy, how='outer', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+        diferencas = (
+            pd.merge(dx, dy, how="outer", indicator=True)
+            .query('_merge == "left_only"')
+            .drop("_merge", axis=1)
+        )
 
         # Criar um novo DataFrame apenas com as colunas modificadas
         df_atualizado = dx.copy()
         df_atualizado[diferencas.columns] = diferencas
 
         # Remover linhas onde todos os valores em TODAS as colunas são NaN
-        df_atualizado_sem_nan = df_atualizado.dropna(how='all', subset=df_atualizado.columns)
+        df_atualizado_sem_nan = df_atualizado.dropna(
+            how="all", subset=df_atualizado.columns
+        )
 
         conn = psycopg2.connect(**db_config)
 
         cursor = conn.cursor()
 
-
         # Iterar sobre as linhas do DataFrame e executar as atualizações no banco de dados
         for index, row in df_atualizado_sem_nan.iterrows():
-            ml_code = row['ml_code']
-            inventory_id = row['inventory_id']
-            value_name = row['value_name']
-            status = row['status']
-            catalog_listing = row['catalog_listing']
+            ml_code = row["ml_code"]
+            inventory_id = row["inventory_id"]
+            value_name = row["value_name"]
+            status = row["status"]
+            catalog_listing = row["catalog_listing"]
             updated_at = datetime.now()  # Use a data/hora atual
 
             # Construir a instrução SQL de atualização
             update_query = sql.SQL(
                 "UPDATE items SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s WHERE ml_code = %s AND inventory_id = %s"
             )
-            
+
             # Executar a instrução SQL
             cursor.execute(
                 update_query,
@@ -435,14 +453,24 @@ with col2:
         logger.info("Dados inseridos com sucesso!")
 
         # Encontrar linhas onde os pares ml_code e inventory_id em df_ficticio são diferentes de dx
-        diferenca = pd.merge(dx, dy, on=['ml_code', 'inventory_id'], how='right', indicator=True)
+        diferenca = pd.merge(
+            dx, dy, on=["ml_code", "inventory_id"], how="right", indicator=True
+        )
 
         # Filtrar apenas as linhas em que df_ficticio tem valores diferentes de dx
-        diferenca = diferenca.query('_merge == "right_only"').drop(columns='_merge')
+        diferenca = diferenca.query('_merge == "right_only"').drop(columns="_merge")
 
         # Selecionar colunas específicas e renomear
-        diferenca = diferenca[['ml_code', 'inventory_id', 'value_name_y', 'status_y', 'catalog_listing_y']]
-        diferenca = diferenca.rename(columns={'value_name_y': 'value_name', 'status_y': 'status', 'catalog_listing_y': 'catalog_listing'})
+        diferenca = diferenca[
+            ["ml_code", "inventory_id", "value_name_y", "status_y", "catalog_listing_y"]
+        ]
+        diferenca = diferenca.rename(
+            columns={
+                "value_name_y": "value_name",
+                "status_y": "status",
+                "catalog_listing_y": "catalog_listing",
+            }
+        )
 
         # Inserir novos dados no banco de dados
         conn = psycopg2.connect(**db_config)
@@ -476,5 +504,3 @@ with col2:
         logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
     else:
         pass
-
-
