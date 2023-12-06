@@ -141,7 +141,8 @@ df_stock_today = df_stock_today.rename(
 try:
     conn = psycopg2.connect(**db_config)
 
-    sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{data_inicio}' AND '{data_fim}'"
+    # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{data_inicio}' AND '{data_fim}'"
+    sql_query = f"SELECT * FROM ml_orders WHERE date_closed BETWEEN '{data_inicio}' AND '{data_fim}'"
     print(sql_query)
     df_orders = pd.read_sql(sql_query, conn)
 
