@@ -350,3 +350,6 @@ if st.button("Iniciar Consulta"):
     )
 
     st.dataframe(dfx, use_container_width=True)
+    
+    st.header("Produtos sem estoque no período", divider="grey")
+    st.dataframe(df_no_itens, use_container_width=True)
