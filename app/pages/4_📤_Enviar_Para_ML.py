@@ -1,7 +1,4 @@
-# from pages.ml_consume.ml_consume import MeLiLoader
-# from pages.tiny_consume.tiny_consume import TinyLoader
 import os
-import time
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -10,7 +7,6 @@ import psycopg2
 import streamlit as st
 from dotenv import load_dotenv
 from pandas import json_normalize
-from psycopg2 import sql
 
 load_dotenv()
 
@@ -20,6 +16,7 @@ POSTGRES_DB = os.getenv("POSTGRES_DB")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
+
 # Informações de conexão com o banco de dados PostgreSQL
 db_config = {
     "host": HOST,
@@ -27,6 +24,7 @@ db_config = {
     "user": POSTGRES_USER,
     "password": POSTGRES_PASSWORD,
 }
+
 
 # Interface do Streamlit
 st.title("Produtos a enviar ao Fulfillment")
@@ -47,6 +45,15 @@ input_days = st.number_input(
     label="Enviar produtos para os próximos x dias", step=1, value=30
 )
 
+
+# ### Período a consultar
+
+# Defina as datas de início e fim desejadas
+data_inicio = datetime(2023, 11, 1).date()
+data_fim = datetime(2023, 12, 8).date()
+data_fim = data_fim + timedelta(days=1)  # + 1 dia para pegar a data atual no DB
+print(data_fim)
+
 # Botão para iniciar a consulta
 if st.button("Iniciar Consulta"):
     # Exibe uma mensagem enquanto a consulta está em andamento
@@ -56,16 +63,13 @@ if st.button("Iniciar Consulta"):
     mensagem_aguarde.empty()
     st.success("Consulta concluída com sucesso!")
 
-    # ### Historico de estoque
+    # ### Historico de estoque fulfillment
     # Buscando histórico de estoque na tabela
     try:
         conn = psycopg2.connect(**db_config)
 
-        # sql_query = f"SELECT * FROM fulfillment_stock_hist WHERE created_at BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
-        sql_query = f"SELECT * FROM fulfillment_stock_hist WHERE created_at BETWEEN '{date_from}' AND '{date_to}'"
-
-        st.subheader("Consulta SQL")
-        st.write(sql_query)
+        # sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '{data_inicio}' AND '{data_fim};'"
+        sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
@@ -78,11 +82,7 @@ if st.button("Iniciar Consulta"):
         if conn is not None:
             conn.close()
 
-    # datas consultadas, dias em que um produto pode ou não estar disponível
-    df_stock["created_at"].value_counts().index.to_list()
-
     # Ordenando stock por data
-    # df_stock["created_at"] = pd.to_datetime(df_stock["created_at"])
     df_stock = df_stock.sort_values(by="created_at", ascending=False)
     df_stock["data"] = df_stock["created_at"].dt.date
     df_stock = df_stock.drop(["created_at"], axis=1)
@@ -90,23 +90,18 @@ if st.button("Iniciar Consulta"):
     ## Cria coluna has_stock, se available_quantity <= 0, has_stock= False ##
     df_stock = df_stock.assign(has_stock=lambda x: x["available_quantity"] > 0)
     df_stock = df_stock.sort_values(by="data", ascending=False).reset_index(drop=True)
-
-    df_stock = df_stock.drop_duplicates()
-
-    # Dias em que produto esteve disponível
-    #  Contando dias em que produto esteve disponível
-    days_available = (
-        df_stock.groupby("ml_inventory_id")["has_stock"].sum().reset_index()
-    )
+                            
+    # #### Dias em que produto esteve disponível
+    ## Contando dias em que produto esteve disponível
+    days_available = df_stock.groupby(["ml_inventory_id"])["has_stock"].sum().reset_index()
     days_available = days_available.rename(columns={"has_stock": "days_available"})
 
     # Unindo DFs
-    df_stock = df_stock.merge(days_available, on="ml_inventory_id", how="inner")
+    df_stock = df_stock.merge(days_available, on=["ml_inventory_id"], how="inner")
 
-    # datas
+
+    # data de hoje
     data_de_hoje = datetime.now().date()
-    data_de_ontem = datetime.now().date() - timedelta(days=1)
-
     df_stock["data"] = pd.to_datetime(df_stock["data"])
 
     # Filtra apenas as linhas onde 'data' é igual à data de hoje
@@ -114,41 +109,22 @@ if st.button("Iniciar Consulta"):
     df_stock_today = df_stock_today.rename(
         columns={"available_quantity": "available_quantity_today"}
     )
-    # df_stock_today = df_stock.drop(['has_stock'], axis=1)
 
-    st.subheader("Estoque de produtos do fulfillment")
-    df_stock = df_stock.drop_duplicates()
-    st.caption(f"Tamanho do dataframe: {df_stock.shape}")
-    st.dataframe(df_stock, use_container_width=True)
+    # Se detail_status = transfer: available_quantity_today = available_quantity_today + detail_quantity
+    condicao = df_stock_today["detail_status"] == "transfer"
 
-    st.subheader("Disponiblidade dos produtos hoje e dias disponíveis")
-    # df_available = df_stock_today.drop(['available_quantity_today'], axis=1)
-    # st.dataframe(df_available, use_container_width=True)
-    df_stock_today = df_stock_today.drop_duplicates()
+    df_stock_today.loc[condicao, "available_quantity_today"] += df_stock_today.loc[
+        condicao, "detail_quantity"
+    ]
 
-    st.caption(f"Tamanho do dataframe: {df_stock_today.shape}")
-    st.dataframe(df_stock_today, use_container_width=True)
-
-    # SIZW84848
-
-    ## Buscando hitorico de orders no BD
+    # ### Buscando hitorico de orders no BD
     # Buscando histórico de vendas na tabela ml_orders_hist para o período definido
-
-    date_from_datetime64 = pd.to_datetime(date_from).date()
-    date_to_datetime64 = pd.to_datetime(date_to).date()
-    date_from_s = date_from_datetime64.strftime("%Y-%m-%d")
-    date_to_s = date_to_datetime64.strftime("%Y-%m-%d")
-
     try:
         conn = psycopg2.connect(**db_config)
 
-        # Construa a consulta SQL com a condição de data
-        # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{ano_from}-{mes_from}-{dia_from}' AND '{ano_to}-{mes_to}-{dia_to}'"
-        # sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from_s}' AND '{date_to_s}'"
-        sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to};'"
-        st.subheader("Consulta SQL")
-        st.write(sql_query)
-        # Execute a consulta e leia os dados em um DataFrame
+        # sql_query = f"SELECT * FROM ml_orders WHERE date_closed BETWEEN '{data_inicio}' AND '{data_fim}'"
+        sql_query = f"SELECT * FROM ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        print(sql_query)
         df_orders = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
@@ -163,75 +139,65 @@ if st.button("Iniciar Consulta"):
         if conn is not None:
             conn.close()
 
-    # filtros
-    df_orders = df_orders[df_orders["fulfilled"] == True]
-    df_orders = df_orders[df_orders["order_status"] == "paid"]
-    df_orders = df_orders[df_orders["payment_status"] == "approved"]
-    df_orders = df_orders.drop(
-        ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"],
-        axis=1,
-    )
-    df_orders.rename(columns={"quantity": "sales_quantity"}, inplace=True)
-
     # # Ordenando orders por data
-    # df_orders = df_orders.sort_values(by="date_closed", ascending=False)
-    # df_orders["data"] = df_orders["date_closed"].dt.date()
-    # df_orders = df_orders.drop(["date_closed"], axis=1)
-    # df_orders["data"] = df_orders["date_approved"].dt.date
+    df_orders = df_orders.sort_values(by="date_approved", ascending=False)
+    df_orders["data"] = df_orders["date_approved"].dt.date
 
+    # filtros
+    df_orders = df_orders[df_orders["logistic_type"] == "fulfillment"]
+    df_orders = df_orders.drop(
+        columns=[
+            "category_id",
+            "pack_id",
+            "variation_attributes_id",
+            "variation_name",
+            "variation_value_id",
+        ]
+    )
+
+    # change column
+    df_orders["variation_id"] = df_orders["variation_id"].replace("nan", "0", regex=True)
+
+
+    df_orders.rename(columns={"quantity": "sold_quantity"}, inplace=True)
+
+    # print(df_orders.shape)
     df_orders = df_orders.drop_duplicates()
+    # print(df_orders.shape)
 
-    st.subheader(f"Vendas entre {date_from} e {date_to}")
-    st.caption(
-        f"Filtros: 'fulfilled' = True; 'order_status' = 'paid'; 'payment_status' = 'approved'"
-    )
-    st.caption(f"Tamanho do dataframe: {df_orders.shape}")
-    st.dataframe(df_orders, use_container_width=True)
 
-    # #### Total de vendas por ml_code e seller_sku
-
-    # calcular total de vendas por ml_code e seller_sku no periodo
-    # total_sales_by_filter = (
-    #     df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"].sum().reset_index()
-    # )
-    total_sales_by_filter = (
-        df_orders.groupby(["ml_code", "seller_sku", "variation_id"])["sales_quantity"]
-        .sum()
-        .reset_index()
-    )
-    total_sales_by_filter.rename(
-        columns={"sales_quantity": "total_sales_quantity"}, inplace=True
+    # #### Total de vendas por ml_code e variation_id
+    resultado_code_variation = (
+        df_orders.groupby(["ml_code", "variation_id"])["sold_quantity"].sum().reset_index()
     )
 
-    # # Acrescentando total de vendas ao DF
-    # df_total_sales = pd.merge(
-    #     df_orders, total_sales_by_filter, on=["ml_code", "seller_sku"], how="inner"
-    # )
+    # Ordenando orders por data
+    df_orders = df_orders.sort_values(by="date_approved", ascending=False)
+    df_orders["data"] = df_orders["date_approved"].dt.date
+    df_orders = df_orders.drop(["date_closed", "date_approved"], axis=1)
 
-    # df_total_sales = df_total_sales.drop(["sales_quantity", "shipping_id", "data"], axis=1)
-    # df_total_sales = df_total_sales.drop_duplicates()
+    # Acrescentando total de vendas ao DF
+    df_total_sales = pd.merge(
+        # df_orders, resultado, on=["ml_code", "variation_id"], how="inner"
+        df_orders,
+        resultado_code_variation,
+        on=["ml_code", "variation_id"],
+        how="inner",
+    )
+    df_total_sales = df_total_sales.rename(
+        columns={"sold_quantity_y": "total_sold_quantity"}
+    )
+    df_total_sales = df_total_sales.drop(
+        columns=["sold_quantity_x", "order_status", "payment_status"]
+    )
 
-    st.subheader("Total de vendas")
-    st.caption(f"Tamanho do dataframe: {total_sales_by_filter.shape}")
-    st.caption(total_sales_by_filter.columns)
-    st.dataframe(total_sales_by_filter, use_container_width=True)
-
-    # st.subheader('Total de vendas Final')
-    # st.caption(f"Tamanho do dataframe: {df_total_sales.shape}")
-    # st.caption(df_total_sales.columns)
-    # st.dataframe(df_total_sales, use_container_width=True)
-
-    st.write("Se cada linha é uma venda, sales_quantity é a quantidade vendida.")
 
     # #### Buscando Produtos
     # Buscando dados de produtos na tabela tiny_fulfillment
-
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = "SELECT * FROM tiny_fulfillment"
-        st.subheader("Consulta SQL")
-        st.write(sql_query)
+        sql_query = "SELECT * FROM items"
         df_codes = pd.read_sql(sql_query, conn)
     except psycopg2.Error as e:
         # logger.error(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
@@ -245,274 +211,142 @@ if st.button("Iniciar Consulta"):
         if conn is not None:
             conn.close()
 
-    df_codes["ml_code"] = df_codes["ml_code"].apply(lambda x: "MLB" + str(x))
-    df_codes.rename(columns={"quantity": "total_sales_quantity"}, inplace=True)
-    df_codes = df_codes.drop(["mcenter_id", "created_at", "updated_at"], axis=1)
+    df_codes.rename(columns={"inventory_id": "ml_inventory_id"}, inplace=True)
+    df_codes = df_codes.drop(["created_at", "updated_at"], axis=1)
 
-    st.subheader("FulxTiny")
-    st.dataframe(df_codes, use_container_width=True)
 
-    #     # ### Produtos + Dias disponíveis
-    #     prod_day = pd.merge(df_codes, df_stock_today, on="ml_inventory_id", how="inner")
+    df_not_catalogo = df_codes[df_codes["catalog_listing"] == False]
+    df_catalogo = df_codes[df_codes["catalog_listing"] == True]
 
-    #     # st.write('Produtos + Dias disponíveis')
-    #     # st.dataframe(prod_day, use_container_width=True)
 
-    #     # ### Prod_Day + Total_sales
-    #     df_sales = pd.merge(
-    #         df_total_sales,
-    #         prod_day,
-    #         left_on=["ml_code", "seller_sku"],
-    #         right_on=["ml_code", "ml_sku"],
-    #         how="inner",
-    #     )
+    df_total_sales_cat = pd.merge(
+        df_catalogo,
+        df_total_sales,
+        left_on=["ml_code"],
+        right_on=["ml_code"],
+        how="inner",
+    )
+    df_total_sales_cat = df_total_sales_cat.drop_duplicates()
 
-    #     cols = [
-    #         "ml_code",
-    #         "ml_sku",
-    #         "ml_inventory_id",
-    #         "tiny_id",
-    #         "tiny_sku",
-    #         "var_code",
-    #         "variation_id",
-    #         "title",
-    #         "total_sales_quantity",
-    #         "qtd_item",
-    #         "days_available",
-    #         "available_quantity_today",
-    #         "data",
-    #     ]
+    df_total_sales_not_cat = pd.merge(
+        df_not_catalogo,
+        df_total_sales,
+        left_on=["ml_code", "variation_id"],
+        right_on=["ml_code", "variation_id"],
+        how="inner",
+    )
+    df_total_sales_not_cat = df_total_sales_not_cat.drop_duplicates()
 
-    #     df_sales = df_sales[cols]
 
-    #     # st.write('df_sales')
-    #     # st.dataframe(df_sales, use_container_width=True)
+    # print(df_total_sales_cat.shape)
+    df_total_sales_cat = df_total_sales_cat.drop(
+        columns=["data", "shipping_id", "variation_id_x", "order_id"]
+    )
+    df_total_sales_cat = df_total_sales_cat.drop_duplicates()
+    # print(df_total_sales_cat.shape)
 
-    #     # ### Calculando métricas
-    #     # media de produtos disponiveis no período
-    #     df_sales["media_prod_days_available"] = (
-    #         df_sales["total_sales_quantity"] / df_sales["days_available"]
-    #     )
-    #     df_sales["media_prod_days_available"] = df_sales["media_prod_days_available"].fillna(0)
 
-    #     days = input_days
+    # print(df_total_sales_not_cat.shape)
+    df_total_sales_not_cat = df_total_sales_not_cat.drop(
+        columns=["data", "shipping_id", "order_id"]
+    )
+    df_total_sales_not_cat = df_total_sales_not_cat.drop_duplicates()
+    # print(df_total_sales_not_cat.shape)
 
-    #     # qtd de produtos a enviar no período, caso seja valor negativo produto está acima do esperado para envio(sobrando)
-    #     df_sales["period_send_fulfillment"] = np.ceil(
-    #         (df_sales["total_sales_quantity"] / df_sales["days_available"]) * days
-    #         - df_sales["available_quantity_today"]
-    #     )
-    #     df_sales["period_send_fulfillment"] = df_sales["period_send_fulfillment"].fillna(0)
 
-    #     # qtd de produtos a enviar hoje, caso seja valor negativo produto está acima do esperado para envio(sobrando)
-    #     df_sales["today_send_fulfillment"] = np.ceil(
-    #         (df_sales["total_sales_quantity"] / df_sales["days_available"])
-    #         - df_sales["available_quantity_today"]
-    #     )
-    #     df_sales["today_send_fulfillment"] = df_sales["today_send_fulfillment"].fillna(0)
+    df_total_sales_cat = df_total_sales_cat.drop_duplicates(
+        subset=["ml_code", "ml_inventory_id"]
+    )
+    df_total_sales_not_cat = df_total_sales_not_cat.drop_duplicates(
+        subset=["ml_code", "ml_inventory_id"]
+    )
 
-    #     st.write('Metricas')
-    #     st.dataframe(df_sales, use_container_width=True)
+    df_total_cat = df_total_sales_cat.copy()
+    df_total_not_cat = df_total_sales_not_cat.copy()
 
-    # Defina as datas de início e fim desejadas
-    # date_from = datetime(2023, 11, 15).date()
-    # date_to = datetime(2023, 12, 23).date()
 
-    # Historico de estoque
-    # Buscando histórico de estoque na tabela
-    # try:
-    #     conn = psycopg2.connect(**db_config)
+    # Somando total de vendas por inventory_id
+    df_sum_qt_sold_cat = (
+        df_total_cat.groupby("ml_inventory_id")["total_sold_quantity"].sum().reset_index()
+    )
+    df_sum_qt_sold_cat = df_sum_qt_sold_cat.rename(
+        columns={"total_sold_quantity": "total_sold_catalog"}
+    )
 
-    #     sql_query = f"SELECT * FROM fulfillment_stock_hist WHERE created_at BETWEEN '{date_from}' AND '{date_to}'"
-    #     df_stock = pd.read_sql(sql_query, conn)
-    #     print(df_stock)
-    # except psycopg2.Error as e:
-    #     print(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
+    df_total_cat = pd.merge(
+        df_total_cat, df_sum_qt_sold_cat, on="ml_inventory_id", how="left"
+    )
 
-    # except Exception as e:
-    #     print(f"Erro ao consultar fulfillment_stock: {e}")
+    df_total_cat.rename(columns={"variation_id_y": "variation_id_"})
 
-    # finally:
-    #     if conn is not None:
-    #         conn.close()
 
-    # # datas consultadas, dias em que um produto pode ou não estar disponível
-    # df_stock["created_at"].value_counts().index.to_list()
+    df_sum_qt_sold_not_cat = (
+        df_total_not_cat.groupby("ml_inventory_id")["total_sold_quantity"]
+        .sum()
+        .reset_index()
+    )
+    df_sum_qt_sold_not_cat = df_sum_qt_sold_not_cat.rename(
+        columns={"total_sold_quantity": "total_sold_not_catalog"}
+    )
+    df_total_not_cat = pd.merge(
+        df_total_not_cat, df_sum_qt_sold_not_cat, on="ml_inventory_id", how="left"
+    )
 
-    # # Ordenando stock por data
-    # df_stock = df_stock.sort_values(by="created_at", ascending=False)
-    # df_stock["data"] = df_stock["created_at"].dt.date
-    # df_stock = df_stock.drop(["created_at"], axis=1)
+    df_total_cat.rename(columns={"variation_id_y": "variation_id"}, inplace=True)
 
-    # # Cria coluna has_stock, se available_quantity <= 0, has_stock= False ##
-    # df_stock = df_stock.assign(has_stock=lambda x: x["available_quantity"] > 0)
-    # df_stock = df_stock.sort_values(by="data", ascending=False).reset_index(drop=True)
+    df_total_cat = df_total_cat.drop_duplicates(subset=["ml_inventory_id"])
 
-    # df_stock = df_stock.drop_duplicates()
+    df_combined = pd.merge(
+        df_total_not_cat,
+        df_total_cat[["ml_inventory_id", "total_sold_catalog"]],
+        on="ml_inventory_id",
+        how="left",
+    )
 
-    # # Dias em que produto esteve disponível
+    df = pd.merge(df_combined, df_stock_today, on="ml_inventory_id", how="inner")
+    df["total_sold_catalog"] = df["total_sold_catalog"].fillna(0).astype("int64")
 
-    # ## Contando dias em que produto esteve disponível
-    # days_available = (
-    #     df_stock.groupby("ml_inventory_id")["has_stock"].sum().reset_index()
-    # )
-    # days_available = days_available.rename(columns={"has_stock": "days_available"})
+    # days = 30
+    days = input_days
 
-    # # Unindo DFs
-    # df_stock = df_stock.merge(days_available, on="ml_inventory_id", how="inner")
+    df["total_sold"] = df["total_sold_catalog"] + df["total_sold_not_catalog"]
+    # qtd de produtos a enviar no período, caso seja valor negativo produto está acima do esperado para envio(sobrando)
+    df["period_send_fulfillment"] = np.ceil(
+        (df["total_sold"] / df["days_available"]) * days - df["available_quantity_today"]
+    )
 
-    # # data de hoje
-    # # data_de_hoje = datetime.now().date() - timedelta(days=1)
-    # # print(data_de_hoje)
-    # data_de_hoje = datetime.now().date()
-    # df_stock["data"] = pd.to_datetime(df_stock["data"])
+    df["period_send_fulfillment"] = df["period_send_fulfillment"].fillna(0)
 
-    # # Filtra apenas as linhas onde 'data' é igual à data de hoje
-    # df_stock_today = df_stock[df_stock["data"].dt.date == data_de_hoje]
-    # df_stock_today = df_stock_today.rename(
-    #     columns={"available_quantity": "available_quantity_today"}
-    # )
+    df_have_itens = df[df["days_available"] > 0]
+    df_have_itens.sample(2)
 
-    # df_stock_today["days_available"].value_counts()
+    # produtos sem estoque no período
+    df_no_itens = df[df["days_available"] <= 0]
+    df_no_itens = df_no_itens.drop(columns=["period_send_fulfillment"])
+    df_no_itens.sample(2)
 
-    # # Buscando hitorico de orders no BD
-    # # Buscando histórico de vendas na tabela ml_orders_hist para o período definido
-    # try:
-    #     conn = psycopg2.connect(**db_config)
+    dfx = df_have_itens.copy()
 
-    #     # Construa a consulta SQL com a condição de data
-    #     sql_query = f"SELECT * FROM ml_orders_hist WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
-    #     print(sql_query)
-    #     # Execute a consulta e leia os dados em um DataFrame
-    #     df_orders = pd.read_sql(sql_query, conn)
+    cols = [
+        "ml_code",
+        "seller_sku",
+        "ml_inventory_id",
+        "value_name",
+        "status",
+        "title",
+        "available_quantity_today",
+        "detail_status",
+        "detail_quantity",
+        "days_available",
+        "total_sold_not_catalog",
+        "total_sold_catalog",
+        "total_sold",
+        "period_send_fulfillment",
+    ]
 
-    # except psycopg2.Error as e:
-    #     print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
-    #     # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+    dfx = dfx[cols]
+    dfx.rename(
+        columns={"detail_status": "transfer_status", "detail_quantity": "transfer_quantity"}
+    )
 
-    # except Exception as e:
-    #     print(f"Erro ao consultar ml_orders_hist: {e}")
-    #     # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
-
-    # finally:
-    #     if conn is not None:
-    #         conn.close()
-
-    # # filtros
-    # df_orders = df_orders[df_orders["fulfilled"] == True]
-    # df_orders = df_orders[df_orders["order_status"] == "paid"]
-    # df_orders = df_orders[df_orders["payment_status"] == "approved"]
-    # df_orders = df_orders.drop(
-    #     ["pack_id", "date_approved", "fulfilled", "order_status", "payment_status"],
-    #     axis=1,
-    # )
-    # df_orders.rename(columns={"quantity": "sales_quantity"}, inplace=True)
-
-    # # Ordenando orders por data
-    # df_orders = df_orders.sort_values(by="date_closed", ascending=False)
-    # df_orders["data"] = df_orders["date_closed"].dt.date
-    # df_orders = df_orders.drop(["date_closed"], axis=1)
-
-    # df_orders = df_orders.drop_duplicates()
-
-    # # Total de vendas por ml_code e seller_sku
-
-    # # calcular total de vendas por ml_code e seller_sku no periodo
-    # total_sales_by_filter = (
-    #     df_orders.groupby(["ml_code", "seller_sku"])["sales_quantity"]
-    #     .sum()
-    #     .reset_index()
-    # )
-    # total_sales_by_filter.rename(
-    #     columns={"sales_quantity": "total_sales_quantity"}, inplace=True
-    # )
-
-    # # Acrescentando total de vendas ao DF
-    # df_total_sales = pd.merge(
-    #     df_orders, total_sales_by_filter, on=["ml_code", "seller_sku"], how="inner"
-    # )
-
-    # df_total_sales = df_total_sales.drop(
-    #     ["sales_quantity", "shipping_id", "data"], axis=1
-    # )
-    # df_total_sales = df_total_sales.drop_duplicates()
-
-    # # #### Buscando Produtos
-    # # Buscando dados de produtos na tabela tiny_fulfillment
-    # try:
-    #     conn = psycopg2.connect(**db_config)
-
-    #     sql_query = "SELECT * FROM tiny_fulfillment"
-    #     df_codes = pd.read_sql(sql_query, conn)
-    # except psycopg2.Error as e:
-    #     # logger.error(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
-    #     print(f"Erro do psycopg2 ao consultar tiny_fulfillment: {e}")
-
-    # except Exception as e:
-    #     # logger.error(f"Erro ao consultar tabela tiny_fulfillment: {e}")
-    #     print(f"Erro ao consultar tabela tiny_fulfillment: {e}")
-
-    # finally:
-    #     if conn is not None:
-    #         conn.close()
-
-    # df_codes["ml_code"] = df_codes["ml_code"].apply(lambda x: "MLB" + str(x))
-    # df_codes.rename(columns={"quantity": "total_sales_quantity"}, inplace=True)
-    # df_codes = df_codes.drop(["mcenter_id", "created_at", "updated_at"], axis=1)
-
-    # # ### Produtos + Dias disponíveis
-    # prod_day = pd.merge(df_codes, df_stock_today, on="ml_inventory_id", how="inner")
-
-    # # ### Prod_Day + Total_sales
-    # df_sales = pd.merge(
-    #     df_total_sales,
-    #     prod_day,
-    #     left_on=["ml_code", "seller_sku"],
-    #     right_on=["ml_code", "ml_sku"],
-    #     how="inner",
-    # )
-
-    # cols = [
-    #     "ml_code",
-    #     "ml_sku",
-    #     "ml_inventory_id",
-    #     "tiny_id",
-    #     "tiny_sku",
-    #     "var_code",
-    #     "variation_id",
-    #     "title",
-    #     "total_sales_quantity",
-    #     "qtd_item",
-    #     "days_available",
-    #     "available_quantity_today",
-    #     "data",
-    # ]
-
-    # df_sales = df_sales[cols]
-
-    # # media de produtos disponiveis no período
-    # df_sales["media_prod_days_available"] = (
-    #     df_sales["total_sales_quantity"] / df_sales["days_available"]
-    # )
-    # df_sales["media_prod_days_available"] = df_sales[
-    #     "media_prod_days_available"
-    # ].fillna(0)
-
-    # days = input_days
-
-    # # qtd de produtos a enviar no período, caso seja valor negativo produto está acima do esperado para envio(sobrando)
-    # df_sales["period_send_fulfillment"] = np.ceil(
-    #     (df_sales["total_sales_quantity"] / df_sales["days_available"]) * days
-    #     - df_sales["available_quantity_today"]
-    # )
-    # df_sales["period_send_fulfillment"] = df_sales["period_send_fulfillment"].fillna(0)
-
-    # # qtd de produtos a enviar hoje, caso seja valor negativo produto está acima do esperado para envio(sobrando)
-    # df_sales["today_send_fulfillment"] = np.ceil(
-    #     (df_sales["total_sales_quantity"] / df_sales["days_available"])
-    #     - df_sales["available_quantity_today"]
-    # )
-    # df_sales["today_send_fulfillment"] = df_sales["today_send_fulfillment"].fillna(0)
-
-    # st.write("Métricas")
-    # st.dataframe(df_sales, use_container_width=True)
+    st.dataframe(dfx, use_container_width=True)
