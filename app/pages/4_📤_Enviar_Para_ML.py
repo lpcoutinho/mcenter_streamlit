@@ -41,10 +41,10 @@ input_days = st.number_input(
 # ### Período a consultar
 
 # Defina as datas de início e fim desejadas
-data_inicio = datetime(2023, 11, 1).date()
-data_fim = datetime(2023, 12, 8).date()
-data_fim = data_fim + timedelta(days=1)  # + 1 dia para pegar a data atual no DB
-print(data_fim)
+# data_inicio = datetime(2023, 11, 1).date()
+# data_fim = datetime(2023, 12, 8).date()
+# data_fim = data_fim + timedelta(days=1)  # + 1 dia para pegar a data atual no DB
+# print(data_fim)
 
 # Informações de conexão com o banco de dados PostgreSQL
 db_config = {
@@ -73,7 +73,7 @@ if st.button("Iniciar Consulta"):
 
         sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
         # sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
-        print(sql_query)
+        # print(sql_query)
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
@@ -108,7 +108,7 @@ if st.button("Iniciar Consulta"):
     # data de hoje
     data_de_hoje = datetime.now().date()
     data_de_hoje = data_de_hoje - timedelta(days=1)
-    print(data_de_hoje)
+    # print(data_de_hoje)
 
     df_stock_days["data"] = pd.to_datetime(df_stock_days["data"])
 
@@ -137,7 +137,7 @@ if st.button("Iniciar Consulta"):
         conn = psycopg2.connect(**db_config)
 
         sql_query = f"SELECT * FROM ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
-        print(sql_query)
+        # print(sql_query)
         df_orders = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
@@ -172,9 +172,9 @@ if st.button("Iniciar Consulta"):
 
     df_orders.rename(columns={"quantity": "sold_quantity"}, inplace=True)
 
-    print(df_orders.shape)
+    # print(df_orders.shape)
     df_orders = df_orders.drop_duplicates()
-    print(df_orders.shape)
+    # print(df_orders.shape)
 
     # Ordenando orders por data
     df_orders = df_orders.sort_values(by="date_approved", ascending=False)
@@ -208,7 +208,7 @@ if st.button("Iniciar Consulta"):
         columns=["sold_quantity_x", "order_status", "payment_status"]
     )
 
-    print(f"Total de vendas = {df_total_sales.shape[0]}")
+    # print(f"Total de vendas = {df_total_sales.shape[0]}")
 
     # Buscando dados de produtos na tabela tiny_fulfillment
     try:
@@ -266,26 +266,27 @@ if st.button("Iniciar Consulta"):
         "total_sold_quantity"
     ].astype("int64")
 
-    print(df_total_sales_cat.shape)
-    print(df_total_sales_not_cat.shape)
+    # print(df_total_sales_cat.shape)
+    # print(df_total_sales_not_cat.shape)
 
     df_total_sales_cat_x = df_total_sales_cat.drop(
         columns=["data", "shipping_id", "variation_id_x", "order_id"]
     )
     df_total_sales_cat_x = df_total_sales_cat_x.drop_duplicates()
-    df_total_sales_cat_x.shape
+    
+    # df_total_sales_cat_x.shape
 
-    print(df_total_sales_not_cat.shape)
+    # print(df_total_sales_not_cat.shape)
+    # print(df_total_sales_not_cat.shape)
 
-    print(df_total_sales_not_cat.shape)
     df_total_sales_not_cat_x = df_total_sales_not_cat.drop(
         columns=["data", "shipping_id", "order_id"]
     )
     df_total_sales_not_cat_x = df_total_sales_not_cat_x.drop_duplicates()
-    print(df_total_sales_not_cat_x.shape)
-
-    print(df_total_sales_cat_x.shape)
-    print(df_total_sales_not_cat_x.shape)
+   
+    # print(df_total_sales_not_cat_x.shape)
+    # print(df_total_sales_cat_x.shape)
+    # print(df_total_sales_not_cat_x.shape)
 
     df_total_sales_cat_x = df_total_sales_cat.drop_duplicates(
         subset=["ml_code", "ml_inventory_id"]
@@ -331,11 +332,12 @@ if st.button("Iniciar Consulta"):
         how="left",
     )
 
-    print(df_total_cat.shape)
-    print(df_total_not_cat.shape)
+    # print(df_total_cat.shape)
+    # print(df_total_not_cat.shape)
 
     df_total_cat.rename(columns={"variation_id_y": "variation_id"}, inplace=True)
-    df_total_cat.shape
+    
+    # df_total_cat.shape
 
     df_total_cat = df_total_cat.drop_duplicates(subset=["ml_inventory_id"])
 
@@ -345,14 +347,15 @@ if st.button("Iniciar Consulta"):
         on="ml_inventory_id",
         how="left",
     )
-    print(df_combined.shape)
+    
+    # print(df_combined.shape)
 
     df = pd.merge(df_combined, df_stock_today, on="ml_inventory_id", how="left")
     df["total_sold_catalog"] = df["total_sold_catalog"].fillna(0).astype("int64")
 
-    df.shape
+    # df.shape
 
-    days = 30
+    days = input_days
 
     df["total_sold"] = df["total_sold_catalog"] + df["total_sold_not_catalog"]
     # qtd de produtos a enviar no período, caso seja valor negativo produto está acima do esperado para envio(sobrando)
@@ -363,15 +366,17 @@ if st.button("Iniciar Consulta"):
 
     df["period_send_fulfillment"] = df["period_send_fulfillment"].fillna(0)
 
-    df.shape
+    # df.shape
 
     df_have_itens = df[df["days_available"] > 0]
-    df_have_itens.shape
+    
+    # df_have_itens.shape
 
     # produtos sem estoque no período
     df_no_itens = df[df["days_available"] <= 0]
     df_no_itens = df_no_itens.drop(columns=["period_send_fulfillment"])
-    df_no_itens.shape
+    
+    # df_no_itens.shape
 
     df_sold_zero = df_have_itens[df_have_itens["total_sold"] == 0]
     df_sold = df_have_itens[df_have_itens["total_sold"] > 0]
