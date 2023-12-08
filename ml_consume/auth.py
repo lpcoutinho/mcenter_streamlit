@@ -14,7 +14,7 @@ def refresh_tokens():
             format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
 
-        load_dotenv(override=True)
+        load_dotenv()
 
         CLIENT_ID = os.getenv("CLIENT_ID")
         SCRET_KEY = os.getenv("SCRET_KEY")
@@ -44,7 +44,9 @@ def refresh_tokens():
         logger.info("Procurando arquivo de configurações")
 
         env_path = find_dotenv()
-
+        
+        logger.info("env_path: ",env_path)
+        
         with open(env_path, "r") as file:
             lines = file.readlines()
 
@@ -67,5 +69,6 @@ def refresh_tokens():
     except Exception as e:
         logger.error(f"Error: {str(e)}")
 
-
+    logger.info(f"Novo access_token: {access_token}")
+    logger.info(f"Novo refresh_token: {refresh_token}")
 refresh_tokens()

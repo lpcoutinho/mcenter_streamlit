@@ -381,4 +381,4 @@ def send_fulfillment(date_from,date_to):
 
     dfx.shape
 
-    return dfx, df_sold_zero, df_sold
+    return df_no_itens, df_sold_zero, df_sold
