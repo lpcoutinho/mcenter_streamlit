@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -37,6 +38,7 @@ sql_query = "SELECT * FROM items"
 
 df_codes = pd.read_sql(sql_query, conn)
 
+# df_codes = df_codes.sample(10)
 
 # Verifica se há duplicatas
 duplicates = df_codes.duplicated()
@@ -79,29 +81,6 @@ print(f"Quantidade de valores únicos: {num_unique_values}")
 counter = 0
 json_list = []
 
-for item in var_codes:
-    url = f"https://api.mercadolibre.com/inventories/{item}/stock/fulfillment"
-
-    payload = {}
-    headers = {"Authorization": f"Bearer {access_token}"}
-    print(f"Buscando dados {counter}/{len(codes)}: {item}")
-
-    try:
-        response = requests.get(url, headers=headers, data=payload)
-        response.raise_for_status()  # Lança uma exceção HTTPError para códigos de status de erro
-        response_data = response.json()
-        json_list.append(response_data)
-        counter += 1
-
-        if counter % 50 == 0:
-            print(f"Fazendo uma pausa de 1 minuto...")
-            time.sleep(60)
-
-    except requests.exceptions.RequestException as e:
-        print(f"Erro ao fazer a requisição para {url}: {e}")
-
-    except Exception as e:
-        print(f"Erro não esperado: {e}")
 
 for item in codes:
     url = f"https://api.mercadolibre.com/inventories/{item}/stock/fulfillment"
@@ -206,10 +185,12 @@ for index, row in df.iterrows():
     # row = row.where(pd.notna(), None)
     row = row.apply(lambda x: None if pd.isna(x) else x)
 
+    current_time = datetime.now()
+    
     insert_query = sql.SQL(
         """
-        INSERT INTO fulfillment_stock_hist (ml_inventory_id, available_quantity, detail_status, detail_quantity, references_id, references_variation_id)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO fulfillment_stock (ml_inventory_id, available_quantity, detail_status, detail_quantity, references_id, references_variation_id, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
     )
     cursor.execute(
@@ -221,6 +202,7 @@ for index, row in df.iterrows():
             row["not_available_detail_quantity"],
             row["external_references_id"],
             row["external_references_variation_id"],
+            current_time
         ),
     )
     # print(insert_query)
