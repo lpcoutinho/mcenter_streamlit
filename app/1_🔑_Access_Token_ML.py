@@ -45,31 +45,10 @@ if match:
 else:
     print("Nenhum valor encontrado entre 'code=' e '&state=' na string da URL.")
 
-### Refresh Token
+### Access Token ###
 url = "https://api.mercadolibre.com/oauth/token"
 
 payload = f"grant_type=authorization_code&client_id={clientId}&client_secret={secretKey}&code={code}&redirect_uri={redirectURI}"
-headers = {
-    "accept": "application/json",
-    "content-type": "application/x-www-form-urlencoded",
-}
-
-response = requests.request("POST", url, headers=headers, data=payload)
-
-json_data = response.text
-data = json.loads(json_data)
-
-refresh_token = data.get("refresh_token")
-
-if refresh_token:
-    print("refresh_token: ", refresh_token)
-else:
-    print("O campo 'refresh_token' não foi encontrado no JSON.")
-
-### Access token
-url = "https://api.mercadolibre.com/oauth/token"
-
-payload = f"grant_type=refresh_token&client_id={clientId}&client_secret={secretKey}&refresh_token={refresh_token}"
 headers = {
     "accept": "application/json",
     "content-type": "application/x-www-form-urlencoded",
@@ -83,8 +62,39 @@ json_data = response.text
 data = json.loads(json_data)
 
 access_token = data.get("access_token")
+refresh_token = data.get("refresh_token")
 
-# Atualiza o arquivo .env com o novo ACCESS_TOKEN
+
+if access_token:
+    print("access_token: ", access_token)
+else:
+    print("O campo 'access_token' não foi encontrado no JSON.")
+
+if refresh_token:
+    print("refresh_token: ", refresh_token)
+else:
+    print("O campo 'refresh_token' não foi encontrado no JSON.")
+
+### Refresh token ###
+url = "https://api.mercadolibre.com/oauth/token"
+payload = f"grant_type=refresh_token&client_id={clientId}&client_secret={secretKey}&refresh_token={refresh_token}"
+headers = {
+    "accept": "application/json",
+    "content-type": "application/x-www-form-urlencoded",
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+
+json_data = response.text
+data = json.loads(json_data)
+
+access_token_ = data.get("access_token")
+refresh_token_ = data.get("refresh_token")
+
+
+### Atualiza o arquivo .env com o novo ACCESS_TOKEN ###
 env_path = find_dotenv()
 with open(env_path, "r") as file:
     lines = file.readlines()
@@ -95,4 +105,19 @@ with open(env_path, "w") as file:
             line = f"ACCESS_TOKEN='{access_token}'\n"
         file.write(line)
 
+### Atualiza o arquivo .env com o novo REFRESH_TOKEN ###
+env_path = find_dotenv()
+with open(env_path, "r") as file:
+    lines = file.readlines()
+
+with open(env_path, "w") as file:
+    for line in lines:
+        if line.startswith("REFRESH_TOKEN="):
+            line = f"REFRESH_TOKEN='{refresh_token}'\n"
+        file.write(line)
+
 st.write("access_token:", access_token)
+st.write("refresh_token:", refresh_token)
+
+st.write("access_token:", access_token_)
+st.write("refresh_token:", refresh_token_)

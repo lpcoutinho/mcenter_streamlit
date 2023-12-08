@@ -38,7 +38,7 @@ cat ~/.ssh/id_ed25519.pub
 git clone git@github.com:lpcoutinho/mcenter_streamlit.git
 ```
 
-### Defina as variáveid de ambiente
+### Defina as variáveis de ambiente
 Caminhe até o diretório
 ```
 cd mcenter_streamlit/
@@ -61,7 +61,8 @@ sudo pip3 install -r requirements.txt
 ## Definindo crontab
 ### Dê permissões ao arquivo run.sh
 ```
-chmod +x /home/ubuntu/mcenter_streamlit/app/pages/ml_consume/run.sh
+chmod +x /home/ubuntu/mcenter_streamlit/ml_consume/run.sh
+chmod +x /home/ubuntu/mcenter_streamlit/ml_consume/token.sh
 chmod +x /home/ubuntu/mcenter_streamlit/app/pages/tiny_consume/run.sh
 ```
 
@@ -72,7 +73,8 @@ sudo crontab -e
 
 ### Edite o crontab
 ```
-1 0 * * * /home/ubuntu/mcenter_streamlit/app/pages/ml_consume/run.sh >> /home/ubuntu/mcenter_streamlit/cron_ml.txt  2>&1
+1 0 * * * /home/ubuntu/mcenter_streamlit/ml_consume/run.sh >> /home/ubuntu/mcenter_streamlit/cron_ml.txt  2>&1
+30 */5 * * * /home/ubuntu/mcenter_streamlit/ml_consume/run.sh >> /home/ubuntu/mcenter_streamlit/auth_ml.txt  2>&1
 35 0 * * * /home/ubuntu/mcenter_streamlit/app/pages/tiny_consume/run.sh >> /home/ubuntu/mcenter_streamlit/cron_tiny.txt  2>&1
 ```
 

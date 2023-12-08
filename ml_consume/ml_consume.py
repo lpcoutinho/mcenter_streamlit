@@ -44,25 +44,7 @@ class MeLiLoader:
         self.db_config = db_config
         self.ACCESS_TOKEN = ACCESS_TOKEN
 
-    # def load_tiny_fulfillment(self):
-    #     logger.info(
-    #         f"Buscando Inventory IDs de Produtos FulFillment na API do Mercado Livre"
-    #     )
-    #     try:
-    #         conn = psycopg2.connect(
-    #             **self.db_config
-    #         )  # Conecta ao banco de dados usando db_config
-    #         # query = "SELECT * FROM tiny_ml_codes;"
-    #         query = "SELECT * FROM tiny_fulfillment;"
-    #         df_tiny_fulfillment = pd.read_sql_query(query, conn)
-    #         conn.close()
-    #         logger.info(f"Criando DataFrame com a tabela 'tiny_fulfillment'")
-    #         return df_tiny_fulfillment
-    #     except Exception as e:
-    #         logger.info(f"Ocorreu um erro: {str(e)}")
-    #         return None
-
-    def load_items(self):
+    def load_tiny_fulfillment(self):
         logger.info(
             f"Buscando Inventory IDs de Produtos FulFillment na API do Mercado Livre"
         )
@@ -71,11 +53,11 @@ class MeLiLoader:
                 **self.db_config
             )  # Conecta ao banco de dados usando db_config
             # query = "SELECT * FROM tiny_ml_codes;"
-            query = "SELECT * FROM items;"
-            df_items_ful = pd.read_sql_query(query, conn)
+            query = "SELECT * FROM tiny_fulfillment;"
+            df_tiny_fulfillment = pd.read_sql_query(query, conn)
             conn.close()
-            logger.info(f"Criando DataFrame com a tabela 'items'")
-            return df_items_ful
+            logger.info(f"Criando DataFrame com a tabela 'tiny_fulfillment'")
+            return df_tiny_fulfillment
         except Exception as e:
             logger.info(f"Ocorreu um erro: {str(e)}")
             return None
@@ -84,15 +66,14 @@ class MeLiLoader:
         load_dotenv(override=True)
         logger.info("Buscando inventory_ids para consultar no Mercado Livre")
 
-        # df_codes = self.load_tiny_fulfillment()
-        df_codes = self.load_items()
+        df_codes = self.load_tiny_fulfillment()
 
-        # df_codes = df_codes.head(10)
+        df_codes = df_codes.head(10)
 
         counter = 0
         json_list = []
 
-        for item in df_codes["inventory_id"]:
+        for item in df_codes["ml_inventory_id"]:
             url = f"https://api.mercadolibre.com/inventories/{item}/stock/fulfillment"
 
             payload = {}
@@ -182,111 +163,6 @@ class MeLiLoader:
         )
 
         return df_fulfillment
-
-    def get_insert_items_ful(self):
-        logger.info("Buscando inventory_ids para consultar no Mercado Livre")
-
-        json_list = self.get_fulfillment_json_list()
-
-        resultados = []
-
-        for item in json_list:
-            # Extrair os valores desejados
-            inventory_id = item["inventory_id"]
-            total = item["total"]
-            available_quantity = item["available_quantity"]
-            not_available_quantity = item["not_available_quantity"]
-            not_available_detail = item.get(
-                "not_available_detail", []
-            )  # Evita KeyError se "not_available_detail" estiver ausente
-            external_references = item.get("external_references", [])
-
-            # Inicializa variáveis para armazenar detalhes
-            not_available_detail_status = None
-            not_available_detail_quantity = None
-            external_references_type = None
-            external_references_id = None
-            external_references_variation_id = None
-
-            # Verifica se há pelo menos um item em "not_available_detail"
-            if not_available_detail:
-                not_available_detail_status = not_available_detail[0].get("status")
-                not_available_detail_quantity = not_available_detail[0].get("quantity")
-
-            if external_references:
-                external_references_type = external_references[0].get("type")
-                external_references_id = external_references[0].get("id")
-                external_references_variation_id = external_references[0].get(
-                    "variation_id"
-                )
-
-            # Adicionar os resultados à lista
-            resultados.append(
-                {
-                    "inventory_id": inventory_id,
-                    "total": total,
-                    "available_quantity": available_quantity,
-                    "not_available_quantity": not_available_quantity,
-                    # "not_available_detail": not_available_detail,
-                    # "external_references": external_references,
-                    "not_available_detail_status": not_available_detail_status,
-                    "not_available_detail_quantity": not_available_detail_quantity,
-                    "external_references_type": external_references_type,
-                    "external_references_id": external_references_id,
-                    "external_references_variation_id": external_references_variation_id,
-                }
-            )
-
-        df = pd.DataFrame(resultados)
-
-        df["external_references_variation_id"] = (
-            df["external_references_variation_id"]
-            .astype(str)
-            .apply(lambda x: x.rstrip(".0"))
-        )
-        df["not_available_detail_quantity"] = pd.to_numeric(
-            df["not_available_detail_quantity"], errors="coerce"
-        ).astype("Int64")
-        df["not_available_detail_status"] = df["not_available_detail_status"].astype(
-            str
-        )
-        df["external_references_id"] = df["external_references_id"].astype(str)
-
-        conn = psycopg2.connect(**db_config)
-        cursor = conn.cursor()
-
-        for index, row in df.iterrows():
-            # Substituir valores NaN por None
-            # row = row.where(pd.notna(), None)
-            row = row.apply(lambda x: None if pd.isna(x) else x)
-
-            insert_query = sql.SQL(
-                """
-                INSERT INTO fulfillment_stock_hist (ml_inventory_id, available_quantity, detail_status, detail_quantity, references_id, references_variation_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """
-            )
-            cursor.execute(
-                insert_query,
-                (
-                    row["inventory_id"],
-                    row["available_quantity"],
-                    row["not_available_detail_status"],
-                    row["not_available_detail_quantity"],
-                    row["external_references_id"],
-                    row["external_references_variation_id"],
-                ),
-            )
-            # print(insert_query)
-
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-        print("Dados inseridos com sucesso!")
-
-        return df
 
     def get_and_insert_fulfillment_stock(self):
         load_dotenv(override=True)
@@ -969,19 +845,85 @@ class MeLiLoader:
             if conn:
                 conn.close()
 
+    # def insert_fulfillment_db(self, df_fulfillment):
+    #     conn = psycopg2.connect(**self.db_config)
+    #     cursor = conn.cursor()
 
-if __name__ == "__main__":
-    start_prog = time.time()  # Registra o inicio da aplicação
+    #     # Itere pelas linhas do DataFrame e insira os dados na tabela
+    #     for index, row in df_fulfillment.iterrows():
+    #         insert_query = sql.SQL(
+    #             """
+    #             INSERT INTO fulfillment (ml_inventory_id, ml_item_id, variation_id, nad_status, nad_quantity, total, available_quantity, not_available_quantity, type)
+    #             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    #         """
+    #         )
+    #         cursor.execute(
+    #             insert_query,
+    #             (
+    #                 row["ml_inventory_id"],
+    #                 row["ml_item_id"],
+    #                 row["variation_id"],
+    #                 row["nad_status"],
+    #                 row["nad_quantity"],
+    #                 row["total"],
+    #                 row["available_quantity"],
+    #                 row["not_available_quantity"],
+    #                 row["type"],
+    #             ),
+    #         )
 
-    loader = MeLiLoader(db_config, ACCESS_TOKEN)
-    df = loader.get_insert_items_ful()
+    #     # Confirme as alterações
+    #     conn.commit()
 
-    # df = loader.load_items()
-    # df_fulfillment = loader.get_fulfillment()
-    # df_fulfillment = loader.get_insert_items_ful()
+    #     # Feche o cursor e a conexão
+    #     cursor.close()
+    #     conn.close()
 
-    print(df)
+    #     logger.info("Dados inseridos com sucesso na tabela 'ml_fulfillment5'!")
 
-    end_prog = time.time()  # Registra o tempo depois de toda aplicação
-    elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
-    logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
+    # def insert_fulfillment_history_db(self, df_fulfillment):
+    #     conn = psycopg2.connect(**self.db_config)
+    #     cursor = conn.cursor()
+
+    #     for index, row in df_fulfillment.iterrows():
+    #         insert_query = sql.SQL(
+    #             """
+    #             INSERT INTO fulfillment_history (ml_inventory_id, ml_item_id, variation_id, nad_status, nad_quantity, total, available_quantity, not_available_quantity, type)
+    #             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    #         """
+    #         )
+    #         cursor.execute(
+    #             insert_query,
+    #             (
+    #                 row["ml_inventory_id"],
+    #                 row["ml_item_id"],
+    #                 row["variation_id"],
+    #                 row["nad_status"],
+    #                 row["nad_quantity"],
+    #                 row["total"],
+    #                 row["available_quantity"],
+    #                 row["not_available_quantity"],
+    #                 row["type"],
+    #             ),
+    #         )
+
+    #     conn.commit()
+
+    #     cursor.close()
+    #     conn.close()
+
+    #     logger.info("Dados inseridos com sucesso na tabela 'ml_fulfillment5'!")
+
+
+# if __name__ == "__main__":
+#     start_prog = time.time()  # Registra o inicio da aplicação
+
+#     loader = MeLiLoader(db_config, ACCESS_TOKEN)
+#     df_fulfillment = loader.get_fulfillment()
+#     loader.insert_fulfillment_db(df_fulfillment)
+
+#     print(df_fulfillment)
+
+#     end_prog = time.time()  # Registra o tempo depois de toda aplicação
+#     elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
+#     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")

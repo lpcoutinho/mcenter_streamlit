@@ -1,3 +1,0 @@
-consultar orders por variation_id e ml_code. caso variation_id não exista apenas ml_code é o suficiente;
-contar quais itens e quantos foram vendidos;
-calcular envio para fulfillment e somar produtos em transerência ao estoque atual.
