@@ -5,6 +5,28 @@ import requests
 from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 
+def update_tokens(env_path, access_token, refresh_token):
+    logger.info("Atualizando ACCESS_TOKEN e REFRESH_TOKEN")
+
+    if not os.path.exists(env_path):
+        logger.error(f"Arquivo de configurações não encontrado.")
+        return
+
+    with open(env_path, "r") as file:
+        lines = file.readlines()
+
+    # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
+    for i in range(len(lines)):
+        if lines[i].startswith("ACCESS_TOKEN="):
+            lines[i] = f"ACCESS_TOKEN='{access_token}'\n"
+        elif lines[i].startswith("REFRESH_TOKEN="):
+            lines[i] = f"REFRESH_TOKEN='{refresh_token}'\n"
+
+    with open(env_path, "w") as file:
+        file.writelines(lines)
+
+    logger.info("Tokens atualizados com sucesso.")
+
 
 def refresh_tokens():
     try:
@@ -45,30 +67,12 @@ def refresh_tokens():
 
         env_path = find_dotenv()
         
-        logger.info("env_path: ",env_path)
-        
-        with open(env_path, "r") as file:
-            lines = file.readlines()
-
-        logger.info("Atualizando ACCESS_TOKEN")
-
-        with open(env_path, "w") as file:
-            for line in lines:
-                if line.startswith("ACCESS_TOKEN="):
-                    line = f"ACCESS_TOKEN='{access_token}'\n"
-                file.write(line)
-
-        logger.info("Atualizando REFRESH_TOKEN")
-
-        with open(env_path, "w") as file:
-            for line in lines:
-                if line.startswith("REFRESH_TOKEN="):
-                    line = f"REFRESH_TOKEN='{refresh_token}'\n"
-                file.write(line)
+        update_tokens(env_path, access_token, refresh_token)
 
     except Exception as e:
         logger.error(f"Error: {str(e)}")
 
     logger.info(f"Novo access_token: {access_token}")
     logger.info(f"Novo refresh_token: {refresh_token}")
+
 refresh_tokens()
