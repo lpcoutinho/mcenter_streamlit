@@ -99,12 +99,12 @@ with open(env_path, "r") as file:
 # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
 for i in range(len(lines)):
     if lines[i].startswith("ACCESS_TOKEN_BUENOSHOPS="):
-        lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token_mcenter}'\n"
+        lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
     elif lines[i].startswith("REFRESH_TOKEN_BUENOSHOPS="):
         lines[i] = f"REFRESH_TOKEN_BUENOSHOPS='{refresh_token_buenoshops}'\n"
     
 with open(env_path, "w") as file:
     file.writelines(lines)
 
-st.write("ACCESS_TOKEN_BUENOSHOPS:", access_token_mcenter)
+st.write("ACCESS_TOKEN_BUENOSHOPS:", access_token_buenoshops)
 st.write("REFRESH_TOKEN_BUENOSHOPS:", refresh_token_buenoshops)
