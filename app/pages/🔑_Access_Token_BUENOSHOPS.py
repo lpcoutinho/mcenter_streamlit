@@ -8,10 +8,10 @@ import requests
 import streamlit as st
 from dotenv import find_dotenv, load_dotenv
 
-load_dotenv()
+load_dotenv('.env.buenoshops')
 # load_dotenv(find_dotenv())
 
-REFRESH_TOKEN_BUENOSHOPS = os.getenv("REFRESH_TOKEN_BUENOSHOPS")
+REFRESH_BUENOSHOPS = os.getenv("REFRESH_TOKEN_BUENOSHOPS")
 CLIENT_ID_BUENOSHOPS = os.getenv("CLIENT_ID_BUENOSHOPS")
 SECRET_KEY_BUENOSHOPS = os.getenv("SECRET_KEY_BUENOSHOPS")
 REDIRECT_URI_BUENOSHOPS = os.getenv("REDIRECT_URI_BUENOSHOPS")
@@ -91,7 +91,8 @@ else:
 # access_token_ = data.get("access_token")
 # refresh_token_ = data.get("refresh_token")
 
-env_path = find_dotenv()
+env_path = find_dotenv('.env.buenoshops')
+print(env_path)
 
 try:
     with open(env_path, "r") as file:
@@ -99,10 +100,10 @@ try:
 
     # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
     for i in range(len(lines)):
-        if lines[i].startswith("ACCESS_TOKEN_BUENOSHOPS="):
-            lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
-        elif lines[i].startswith("REFRESH_TOKEN_BUENOSHOPS="):
-            lines[i] = f"REFRESH_TOKEN_BUENOSHOPS='{refresh_token_buenoshops}'\n"
+        if lines[i].startswith("TOKEN_BUENOSHOPS="):
+            lines[i] = f"TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
+        elif lines[i].startswith("REFRESH_BUENOSHOPS="):
+            lines[i] = f"REFRESH_BUENOSHOPS='{refresh_token_buenoshops}'\n"
 
     with open(env_path, "w") as file:
         file.writelines(lines)
