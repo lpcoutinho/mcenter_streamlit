@@ -90,21 +90,25 @@ else:
 
 # access_token_ = data.get("access_token")
 # refresh_token_ = data.get("refresh_token")
-
 env_path = find_dotenv()
 
-with open(env_path, "r") as file:
-            lines = file.readlines()
+try:
+    with open(env_path, "r") as file:
+        lines = file.readlines()
 
-# Atualiza ACCESS_TOKEN e REFRESH_TOKEN
-for i in range(len(lines)):
-    if lines[i].startswith("ACCESS_TOKEN_MCENTER="):
-        lines[i] = f"ACCESS_TOKEN_MCENTER='{access_token_mcenter}'\n"
-    elif lines[i].startswith("REFRESH_TOKEN_MCENTER="):
-        lines[i] = f"REFRESH_TOKEN_MCENTER='{refresh_token_mcenter}'\n"
-    
-with open(env_path, "w") as file:
-    file.writelines(lines)
+    # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
+    for i in range(len(lines)):
+        if lines[i].startswith("ACCESS_TOKEN_MCENTER="):
+            lines[i] = f"ACCESS_TOKEN_MCENTER='{access_token_mcenter}'\n"
+        elif lines[i].startswith("REFRESH_TOKEN_MCENTER="):
+            lines[i] = f"REFRESH_TOKEN_MCENTER='{refresh_token_mcenter}'\n"
+
+    with open(env_path, "w") as file:
+        file.writelines(lines)
+
+    print("Tokens atualizados com sucesso.")
+except Exception as e:
+    print(f"Error updating tokens: {str(e)}")
 
 st.write("access_token_mcenter:", access_token_mcenter)
 st.write("refresh_token_mcenter:", refresh_token_mcenter)

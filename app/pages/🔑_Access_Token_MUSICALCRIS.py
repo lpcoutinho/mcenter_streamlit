@@ -94,18 +94,24 @@ else:
 
 env_path = find_dotenv()
 
-with open(env_path, "r") as file:
-            lines = file.readlines()
+try:
+    with open(env_path, "r") as file:
+        lines = file.readlines()
 
-# Atualiza ACCESS_TOKEN e REFRESH_TOKEN
-for i in range(len(lines)):
-    if lines[i].startswith("ACCESS_TOKEN_MUSICALCRIS="):
-        lines[i] = f"ACCESS_TOKEN_MUSICALCRIS='{access_token_musicalcris}'\n"
-    elif lines[i].startswith("REFRESH_TOKEN_MUSICALCRIS="):
-        lines[i] = f"REFRESH_TOKEN_MUSICALCRIS='{refresh_token_musicalcris}'\n"
+    # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
+    for i in range(len(lines)):
+        if lines[i].startswith("ACCESS_TOKEN_MUSICALCRIS="):
+            lines[i] = f"ACCESS_TOKEN_MUSICALCRIS='{access_token_musicalcris}'\n"
+        elif lines[i].startswith("REFRESH_TOKEN_MUSICALCRIS="):
+            lines[i] = f"REFRESH_TOKEN_MUSICALCRIS='{refresh_token_musicalcris}'\n"
 
-with open(env_path, "w") as file:
-    file.writelines(lines)
+    with open(env_path, "w") as file:
+        file.writelines(lines)
+
+    print("Tokens atualizados com sucesso.")
+except Exception as e:
+    print(f"Error updating tokens: {str(e)}")
+
 
 st.write("access_token_musicalcris", access_token_musicalcris)
 st.write("refresh_token_musicalcris:", refresh_token_musicalcris)

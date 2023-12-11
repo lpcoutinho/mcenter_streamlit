@@ -93,18 +93,24 @@ else:
 
 env_path = find_dotenv()
 
-with open(env_path, "r") as file:
-            lines = file.readlines()
+try:
+    with open(env_path, "r") as file:
+        lines = file.readlines()
 
-# Atualiza ACCESS_TOKEN e REFRESH_TOKEN
-for i in range(len(lines)):
-    if lines[i].startswith("ACCESS_TOKEN_BUENOSHOPS="):
-        lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
-    elif lines[i].startswith("REFRESH_TOKEN_BUENOSHOPS="):
-        lines[i] = f"REFRESH_TOKEN_BUENOSHOPS='{refresh_token_buenoshops}'\n"
-    
-with open(env_path, "w") as file:
-    file.writelines(lines)
+    # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
+    for i in range(len(lines)):
+        if lines[i].startswith("ACCESS_TOKEN_BUENOSHOPS="):
+            lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
+        elif lines[i].startswith("REFRESH_TOKEN_BUENOSHOPS="):
+            lines[i] = f"REFRESH_TOKEN_BUENOSHOPS='{refresh_token_buenoshops}'\n"
+
+    with open(env_path, "w") as file:
+        file.writelines(lines)
+
+    print("Tokens atualizados com sucesso.")
+except Exception as e:
+    print(f"Error updating tokens: {str(e)}")
+
 
 st.write("ACCESS_TOKEN_BUENOSHOPS:", access_token_buenoshops)
 st.write("REFRESH_TOKEN_BUENOSHOPS:", refresh_token_buenoshops)
