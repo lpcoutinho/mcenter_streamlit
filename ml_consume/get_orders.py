@@ -316,7 +316,7 @@ def get_orders_for_date_range(
 
         insert_query = sql.SQL(query)
 
-        logger.info(f"Inserindo dados: {[value for value in row]}")
+        logger.info(f"Inserindo dados em {table_orders}: {[value for value in row]}")
 
         print("Inserindo dados:", [value for value in row])
 
@@ -349,7 +349,7 @@ def get_orders_for_date_range(
     # Feche o cursor e a conexão
     cursor.close()
     conn.close()
-    logger.info("Dados inseridos com sucesso!")
+    logger.info(f"Dados inseridos em {table_orders} com sucesso!")
 
 
 today = datetime.date.today()
