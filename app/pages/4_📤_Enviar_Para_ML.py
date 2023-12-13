@@ -7,6 +7,7 @@ import psycopg2
 import streamlit as st
 from dotenv import load_dotenv
 from pandas import json_normalize
+
 # from ml_consume.calculando_envio_fulfillment import send_fulfillment
 # TODO ModuleNotFoundError: No module named 'ml_consume'
 
@@ -48,11 +49,11 @@ input_days = st.number_input(
 
 # Informações de conexão com o banco de dados PostgreSQL
 db_config = {
-        "host": HOST,
-        "database": POSTGRES_DB,
-        "user": POSTGRES_USER,
-        "password": POSTGRES_PASSWORD,
-    }
+    "host": HOST,
+    "database": POSTGRES_DB,
+    "user": POSTGRES_USER,
+    "password": POSTGRES_PASSWORD,
+}
 
 # Botão para iniciar a consulta
 if st.button("Iniciar Consulta"):
@@ -273,7 +274,7 @@ if st.button("Iniciar Consulta"):
         columns=["data", "shipping_id", "variation_id_x", "order_id"]
     )
     df_total_sales_cat_x = df_total_sales_cat_x.drop_duplicates()
-    
+
     # df_total_sales_cat_x.shape
 
     # print(df_total_sales_not_cat.shape)
@@ -283,7 +284,7 @@ if st.button("Iniciar Consulta"):
         columns=["data", "shipping_id", "order_id"]
     )
     df_total_sales_not_cat_x = df_total_sales_not_cat_x.drop_duplicates()
-   
+
     # print(df_total_sales_not_cat_x.shape)
     # print(df_total_sales_cat_x.shape)
     # print(df_total_sales_not_cat_x.shape)
@@ -336,7 +337,7 @@ if st.button("Iniciar Consulta"):
     # print(df_total_not_cat.shape)
 
     df_total_cat.rename(columns={"variation_id_y": "variation_id"}, inplace=True)
-    
+
     # df_total_cat.shape
 
     df_total_cat = df_total_cat.drop_duplicates(subset=["ml_inventory_id"])
@@ -347,7 +348,7 @@ if st.button("Iniciar Consulta"):
         on="ml_inventory_id",
         how="left",
     )
-    
+
     # print(df_combined.shape)
 
     df = pd.merge(df_combined, df_stock_today, on="ml_inventory_id", how="left")
@@ -369,13 +370,13 @@ if st.button("Iniciar Consulta"):
     # df.shape
 
     df_have_itens = df[df["days_available"] > 0]
-    
+
     # df_have_itens.shape
 
     # produtos sem estoque no período
     df_no_itens = df[df["days_available"] <= 0]
     df_no_itens = df_no_itens.drop(columns=["period_send_fulfillment"])
-    
+
     # df_no_itens.shape
 
     df_sold_zero = df_have_itens[df_have_itens["total_sold"] == 0]
@@ -401,12 +402,16 @@ if st.button("Iniciar Consulta"):
         "period_send_fulfillment",
     ]
 
-    
     df_sold_zero = df_sold_zero[cols]
     df_sold = df_sold[cols]
 
     def rename_columns(df):
-        return df.rename(columns={'detail_status': 'transfer_status', 'detail_quantity': 'transfer_quantity'})
+        return df.rename(
+            columns={
+                "detail_status": "transfer_status",
+                "detail_quantity": "transfer_quantity",
+            }
+        )
 
     df_sold_zero = rename_columns(df_sold_zero)
     df_sold = rename_columns(df_sold)
@@ -419,5 +424,3 @@ if st.button("Iniciar Consulta"):
     st.dataframe(df_sold_zero, use_container_width=True)
     st.header("Produtos sem estoque no período", divider="grey")
     st.dataframe(df_no_itens, use_container_width=True)
-
-

@@ -52,7 +52,9 @@ headers = {
     "content-type": "application/x-www-form-urlencoded",
 }
 
-response_musicalcris = requests.request("POST", url, headers=headers, data=payload_musicalcris)
+response_musicalcris = requests.request(
+    "POST", url, headers=headers, data=payload_musicalcris
+)
 
 print(response_musicalcris.text)
 

@@ -42,14 +42,14 @@ def update_tokens(env_path, access_token, refresh_token):
             lines[i] = f"ACCESS_TOKEN_MUSICALCRIS='{access_token}'\n"
         elif lines[i].startswith("REFRESH_TOKEN_MUSICALCRIS="):
             lines[i] = f"REFRESH_TOKEN_MUSICALCRIS='{refresh_token}'\n"
-                
+
     with open(env_path, "w") as file:
         file.writelines(lines)
 
     logger.info("Tokens atualizados com sucesso.")
 
 
-def refresh_tokens(CLIENT_ID,SECRET_KEY,REFRESH_TOKEN):
+def refresh_tokens(CLIENT_ID, SECRET_KEY, REFRESH_TOKEN, name):
     try:
         logger.add(
             "Data/Output/Log/auth.log",
@@ -57,12 +57,6 @@ def refresh_tokens(CLIENT_ID,SECRET_KEY,REFRESH_TOKEN):
             format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
 
-        # load_dotenv()
-
-        # CLIENT_ID = os.getenv("CLIENT_ID")
-        # SCRET_KEY = os.getenv("SCRET_KEY")
-        # REDIRECT_URI = os.getenv("REDIRECT_URI")
-        # REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
 
         logger.info("Gerando novo access_token e refresh_token")
 
@@ -83,11 +77,14 @@ def refresh_tokens(CLIENT_ID,SECRET_KEY,REFRESH_TOKEN):
 
         access_token = data.get("access_token")
         refresh_token = data.get("refresh_token")
-
+        
+        logger.info(f'access_token {access_token}')
+        logger.info(f'refresh_token {refresh_token}')
+        
         logger.info("Procurando arquivo de configurações")
 
         env_path = find_dotenv()
-        
+
         logger.info("Atualizando ACCESS_TOKEN e REFRESH_TOKEN")
 
         if not os.path.exists(env_path):
@@ -99,30 +96,23 @@ def refresh_tokens(CLIENT_ID,SECRET_KEY,REFRESH_TOKEN):
 
         # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
         for i in range(len(lines)):
-            if lines[i].startswith("ACCESS_TOKEN_MCENTER="):
-                lines[i] = f"ACCESS_TOKEN_MCENTER='{access_token}'\n"
-            elif lines[i].startswith("REFRESH_TOKEN_MCENTER="):
-                lines[i] = f"REFRESH_TOKEN_MCENTER='{refresh_token}'\n"
-            if lines[i].startswith("ACCESS_TOKEN_BUENOSHOPS="):
-                lines[i] = f"ACCESS_TOKEN_BUENOSHOPS='{access_token}'\n"
-            elif lines[i].startswith("REFRESH_TOKEN_BUENOSHOPS="):
-                lines[i] = f"REFRESH_TOKEN_BUENOSHOPS='{refresh_token}'\n"
-            if lines[i].startswith("ACCESS_TOKEN_MUSICALCRIS="):
-                lines[i] = f"ACCESS_TOKEN_MUSICALCRIS='{access_token}'\n"
-            elif lines[i].startswith("REFRESH_TOKEN_MUSICALCRIS="):
-                lines[i] = f"REFRESH_TOKEN_MUSICALCRIS='{refresh_token}'\n"
-                    
+            if lines[i].startswith(f"ACCESS_TOKEN_{name}="):
+                lines[i] = f"ACCESS_TOKEN_{name}='{access_token}'\n"
+            elif lines[i].startswith(f"REFRESH_TOKEN_{name}="):
+                lines[i] = f"REFRESH_TOKEN_{name}='{refresh_token}'\n"
+
         with open(env_path, "w") as file:
             file.writelines(lines)
 
         logger.info("Tokens atualizados com sucesso.")
-            
+
     except Exception as e:
         logger.error(f"Error: {str(e)}")
 
     logger.info(f"Novo access_token: {access_token}")
     logger.info(f"Novo refresh_token: {refresh_token}")
 
-refresh_tokens(CLIENT_ID_MCENTER,SECRET_KEY_MCENTER,REFRESH_TOKEN_MCENTER)
-refresh_tokens(CLIENT_ID_BUENOSHOPS,SECRET_KEY_BUENOSHOPS,REFRESH_TOKEN_BUENOSHOPS)
-refresh_tokens(CLIENT_ID_MUSICALCRIS,SECRET_KEY_MUSICALCRIS,REFRESH_TOKEN_MUSICALCRIS)
+
+refresh_tokens(CLIENT_ID_MCENTER, SECRET_KEY_MCENTER, REFRESH_TOKEN_MCENTER, 'MCENTER')
+refresh_tokens(CLIENT_ID_BUENOSHOPS, SECRET_KEY_BUENOSHOPS, REFRESH_TOKEN_BUENOSHOPS, 'BUENOSHOPS')
+refresh_tokens(CLIENT_ID_MUSICALCRIS, SECRET_KEY_MUSICALCRIS, REFRESH_TOKEN_MUSICALCRIS, 'MUSICALCRIS')

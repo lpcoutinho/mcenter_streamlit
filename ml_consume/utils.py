@@ -1,5 +1,6 @@
 import json
 import os
+
 import requests
 from loguru import logger
 
@@ -71,6 +72,7 @@ def condf_date(df, coluna_data, data_pesquisada):
     """
     resultado = df[pd.to_datetime(df[coluna_data]).dt.date == data_pesquisada]
     return resultado
+
 
 def write_file(json_data, nome_arquivo):
     """

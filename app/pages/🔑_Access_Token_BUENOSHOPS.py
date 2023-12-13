@@ -15,11 +15,12 @@ CLIENT_ID_BUENOSHOPS = os.getenv("CLIENT_ID_BUENOSHOPS")
 SECRET_KEY_BUENOSHOPS = os.getenv("SECRET_KEY_BUENOSHOPS")
 REDIRECT_URI_BUENOSHOPS = os.getenv("REDIRECT_URI_BUENOSHOPS")
 
+
 def update_config_file(file_path, new_values):
-    with open(file_path, 'r') as config_file:
+    with open(file_path, "r") as config_file:
         lines = config_file.readlines()
 
-    with open(file_path, 'w') as config_file:
+    with open(file_path, "w") as config_file:
         for line in lines:
             for key, value in new_values.items():
                 if line.startswith(f"{key}="):
@@ -27,6 +28,7 @@ def update_config_file(file_path, new_values):
                     line = f"{key}='{value}'\n"
                     break
             config_file.write(line)
+
 
 st.header("Capturando Access Token do ML")
 auth_link_mcenter = f"https://auth.mercadolivre.com.br/authorization?response_type=code&client_id={CLIENT_ID_BUENOSHOPS}&redirect_uri={REDIRECT_URI_BUENOSHOPS}"
@@ -64,7 +66,9 @@ headers = {
     "content-type": "application/x-www-form-urlencoded",
 }
 
-response_buenoshops = requests.request("POST", url, headers=headers, data=payload_mcenter)
+response_buenoshops = requests.request(
+    "POST", url, headers=headers, data=payload_mcenter
+)
 print(response_buenoshops.text)
 
 json_data_buenoshops = response_buenoshops.text
@@ -104,10 +108,10 @@ else:
 # refresh_token_ = data.get("refresh_token")
 
 
-# 
+#
 new_values = {
-    'ACCESS_TOKEN_BUENOSHOPS': access_token_buenoshops,
-    'REFRESH_TOKEN_BUENOSHOPS': refresh_token_buenoshops,
+    "ACCESS_TOKEN_BUENOSHOPS": access_token_buenoshops,
+    "REFRESH_TOKEN_BUENOSHOPS": refresh_token_buenoshops,
 }
 
 env_path = find_dotenv()

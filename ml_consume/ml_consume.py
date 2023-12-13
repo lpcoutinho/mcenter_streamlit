@@ -845,7 +845,6 @@ class MeLiLoader:
             if conn:
                 conn.close()
 
-    
 
 # if __name__ == "__main__":
 #     start_prog = time.time()  # Registra o inicio da aplicação
