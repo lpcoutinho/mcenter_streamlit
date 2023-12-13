@@ -34,13 +34,16 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
-def import_data_to_db(access_token, seller_id, db_config, table_item):
+def get_items(access_token, seller_id, db_config, table_item):
     logger.add(
         f"Data/Output/Log/{table_item}.log",
         rotation="10 MB",
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     )
 
+    logger.info(f'Iniciando get_items')
+    logger.info(f'Buscando itens do vendedor {seller_id}')
+    
     start_prog = time.time()  # Registra o inicio da aplicação
 
     load_dotenv()
@@ -320,7 +323,7 @@ def import_data_to_db(access_token, seller_id, db_config, table_item):
         # Construir a instrução SQL de atualização
         query = f"UPDATE {table_item} SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s WHERE ml_code = %s AND inventory_id = %s"
         update_query = sql.SQL(query)
-        logger.info(f"Atualizando dados: {[value for value in row]}")
+        logger.info(f"Atualizando dados em {table_item}: {[value for value in row]}")
         # Executar a instrução SQL
         cursor.execute(
             update_query,
@@ -338,7 +341,7 @@ def import_data_to_db(access_token, seller_id, db_config, table_item):
 
     cursor.close()
     conn.close()
-    logger.info("Dados atualizados com sucesso!")
+    logger.info(f"Dados atualizados em {table_item} com sucesso!")
 
     # Encontrar linhas onde os pares ml_code e inventory_id em df_ficticio são diferentes de dx
     diferenca = pd.merge(
@@ -393,11 +396,11 @@ def import_data_to_db(access_token, seller_id, db_config, table_item):
     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
 
 
-import_data_to_db(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, 'bueno_items')
+get_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, 'bueno_items')
 
 
-import_data_to_db(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, 'cris_items')
+get_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, 'cris_items')
 
 
-import_data_to_db(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, 'mcenter_items')
+get_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, 'mcenter_items')
 

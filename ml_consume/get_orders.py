@@ -80,6 +80,9 @@ def get_orders_for_date_range(
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     )
 
+    logger.info(f'Iniciando get_orders')
+    logger.info(f'Buscando orders do vendedor {seller_id}')
+    
     base_url = "https://api.mercadolibre.com/orders/search"
 
     params = {
@@ -270,7 +273,7 @@ def get_orders_for_date_range(
         )
 
     # Exibir os resultados
-    logger.info(json_logistic_list)
+    # logger.info(json_logistic_list)
 
     # Exibir estatísticas de conclusão
     logger.info(f"Número total de iterações: {total_iterations}")
@@ -296,7 +299,7 @@ def get_orders_for_date_range(
     df_result["logistic_type"] = df_result["shipping_id"].map(order_id_to_logistic_type)
 
     logger.info(df_result.shape)
-    df_result.head(3)
+    # df_result.head(3)
 
     df_result[["order_id", "shipping_id", "pack_id", "variation_id"]] = df_result[
         ["order_id", "shipping_id", "pack_id", "variation_id"]
@@ -318,7 +321,7 @@ def get_orders_for_date_range(
 
         logger.info(f"Inserindo dados em {table_orders}: {[value for value in row]}")
 
-        print("Inserindo dados:", [value for value in row])
+        # print("Inserindo dados:", [value for value in row])
 
         cursor.execute(
             insert_query,
@@ -360,14 +363,13 @@ today_str = today.strftime("%Y-%m-%d")
 tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
 
-get_orders_for_date_range(
-    ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ot"
-)
+# get_orders_for_date_range(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ot")
+get_orders_for_date_range(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ml_orders")
 
 
-get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'cris_ot')
+# get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'bueno_ot')
+get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'bueno_ml_orders')
 
 
-get_orders_for_date_range(
-    ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, today_str, tomorrow_str, "mcenter_ot"
-)
+# get_orders_for_date_range(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, today_str, tomorrow_str, "mcenter_ot")
+get_orders_for_date_range(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, today_str, tomorrow_str, "mcenter_ml_orders")
