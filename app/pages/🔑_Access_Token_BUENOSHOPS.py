@@ -2,19 +2,31 @@
 import json
 import os
 import re
-import time
 
 import requests
 import streamlit as st
 from dotenv import find_dotenv, load_dotenv
 
-load_dotenv('.env.buenoshops')
-# load_dotenv(find_dotenv())
+# load_dotenv('.env.buenoshops')
+load_dotenv()
 
-REFRESH_BUENOSHOPS = os.getenv("REFRESH_TOKEN_BUENOSHOPS")
+REFRESH_TOKEN_BUENOSHOPS = os.getenv("REFRESH_TOKEN_BUENOSHOPS")
 CLIENT_ID_BUENOSHOPS = os.getenv("CLIENT_ID_BUENOSHOPS")
 SECRET_KEY_BUENOSHOPS = os.getenv("SECRET_KEY_BUENOSHOPS")
 REDIRECT_URI_BUENOSHOPS = os.getenv("REDIRECT_URI_BUENOSHOPS")
+
+def update_config_file(file_path, new_values):
+    with open(file_path, 'r') as config_file:
+        lines = config_file.readlines()
+
+    with open(file_path, 'w') as config_file:
+        for line in lines:
+            for key, value in new_values.items():
+                if line.startswith(f"{key}="):
+                    print(f"Updating {key} to {value}")
+                    line = f"{key}='{value}'\n"
+                    break
+            config_file.write(line)
 
 st.header("Capturando Access Token do ML")
 auth_link_mcenter = f"https://auth.mercadolivre.com.br/authorization?response_type=code&client_id={CLIENT_ID_BUENOSHOPS}&redirect_uri={REDIRECT_URI_BUENOSHOPS}"
@@ -73,9 +85,9 @@ else:
     print("O campo 'refresh_token' não foi encontrado em nenhum no JSON.")
 
 
-# ### Refresh token ###
+# # ### Refresh token ###
 # url = "https://api.mercadolibre.com/oauth/token"
-# payload = f"grant_type=refresh_token&client_id={clientId}&client_secret={secretKey}&refresh_token={refresh_token}"
+# payload = f"grant_type=refresh_token&client_id={CLIENT_ID_BUENOSHOPS}&client_secret={SECRET_KEY_BUENOSHOPS}&refresh_token={REFRESH_TOKEN_BUENOSHOPS}"
 # headers = {
 #     "accept": "application/json",
 #     "content-type": "application/x-www-form-urlencoded",
@@ -91,27 +103,15 @@ else:
 # access_token_ = data.get("access_token")
 # refresh_token_ = data.get("refresh_token")
 
-env_path = find_dotenv('.env.buenoshops')
-print(env_path)
 
-try:
-    with open(env_path, "r") as file:
-        lines = file.readlines()
+# 
+new_values = {
+    'ACCESS_TOKEN_BUENOSHOPS': access_token_buenoshops,
+    'REFRESH_TOKEN_BUENOSHOPS': refresh_token_buenoshops,
+}
 
-    # Atualiza ACCESS_TOKEN e REFRESH_TOKEN
-    for i in range(len(lines)):
-        if lines[i].startswith("TOKEN_BUENOSHOPS="):
-            lines[i] = f"TOKEN_BUENOSHOPS='{access_token_buenoshops}'\n"
-        elif lines[i].startswith("REFRESH_BUENOSHOPS="):
-            lines[i] = f"REFRESH_BUENOSHOPS='{refresh_token_buenoshops}'\n"
-
-    with open(env_path, "w") as file:
-        file.writelines(lines)
-
-    print("Tokens atualizados com sucesso.")
-except Exception as e:
-    print(f"Error updating tokens: {str(e)}")
-
+env_path = find_dotenv()
+update_config_file(env_path, new_values)
 
 st.write("ACCESS_TOKEN_BUENOSHOPS:", access_token_buenoshops)
 st.write("REFRESH_TOKEN_BUENOSHOPS:", refresh_token_buenoshops)

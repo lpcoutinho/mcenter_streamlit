@@ -845,75 +845,7 @@ class MeLiLoader:
             if conn:
                 conn.close()
 
-    # def insert_fulfillment_db(self, df_fulfillment):
-    #     conn = psycopg2.connect(**self.db_config)
-    #     cursor = conn.cursor()
-
-    #     # Itere pelas linhas do DataFrame e insira os dados na tabela
-    #     for index, row in df_fulfillment.iterrows():
-    #         insert_query = sql.SQL(
-    #             """
-    #             INSERT INTO fulfillment (ml_inventory_id, ml_item_id, variation_id, nad_status, nad_quantity, total, available_quantity, not_available_quantity, type)
-    #             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    #         """
-    #         )
-    #         cursor.execute(
-    #             insert_query,
-    #             (
-    #                 row["ml_inventory_id"],
-    #                 row["ml_item_id"],
-    #                 row["variation_id"],
-    #                 row["nad_status"],
-    #                 row["nad_quantity"],
-    #                 row["total"],
-    #                 row["available_quantity"],
-    #                 row["not_available_quantity"],
-    #                 row["type"],
-    #             ),
-    #         )
-
-    #     # Confirme as alterações
-    #     conn.commit()
-
-    #     # Feche o cursor e a conexão
-    #     cursor.close()
-    #     conn.close()
-
-    #     logger.info("Dados inseridos com sucesso na tabela 'ml_fulfillment5'!")
-
-    # def insert_fulfillment_history_db(self, df_fulfillment):
-    #     conn = psycopg2.connect(**self.db_config)
-    #     cursor = conn.cursor()
-
-    #     for index, row in df_fulfillment.iterrows():
-    #         insert_query = sql.SQL(
-    #             """
-    #             INSERT INTO fulfillment_history (ml_inventory_id, ml_item_id, variation_id, nad_status, nad_quantity, total, available_quantity, not_available_quantity, type)
-    #             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    #         """
-    #         )
-    #         cursor.execute(
-    #             insert_query,
-    #             (
-    #                 row["ml_inventory_id"],
-    #                 row["ml_item_id"],
-    #                 row["variation_id"],
-    #                 row["nad_status"],
-    #                 row["nad_quantity"],
-    #                 row["total"],
-    #                 row["available_quantity"],
-    #                 row["not_available_quantity"],
-    #                 row["type"],
-    #             ),
-    #         )
-
-    #     conn.commit()
-
-    #     cursor.close()
-    #     conn.close()
-
-    #     logger.info("Dados inseridos com sucesso na tabela 'ml_fulfillment5'!")
-
+    
 
 # if __name__ == "__main__":
 #     start_prog = time.time()  # Registra o inicio da aplicação

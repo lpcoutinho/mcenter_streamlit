@@ -67,7 +67,7 @@ def refresh_tokens(CLIENT_ID,SECRET_KEY,REFRESH_TOKEN):
         logger.info("Gerando novo access_token e refresh_token")
 
         url = "https://api.mercadolibre.com/oauth/token"
-        payload = f"grant_type=refresh_token&client_id={CLIENT_ID}&client_secret={SCRET_KEY}&refresh_token={REFRESH_TOKEN}"
+        payload = f"grant_type=refresh_token&client_id={CLIENT_ID}&client_secret={SECRET_KEY}&refresh_token={REFRESH_TOKEN}"
         headers = {
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",

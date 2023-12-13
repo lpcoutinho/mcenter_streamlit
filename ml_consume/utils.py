@@ -1,5 +1,5 @@
 import json
-
+import os
 import requests
 from loguru import logger
 
@@ -71,3 +71,32 @@ def condf_date(df, coluna_data, data_pesquisada):
     """
     resultado = df[pd.to_datetime(df[coluna_data]).dt.date == data_pesquisada]
     return resultado
+
+def write_file(json_data, nome_arquivo):
+    """
+    Escreve dados em um arquivo JSON, adicionando ao arquivo existente se ele já existir.
+
+    Parâmetros:
+    - json_data (list): Lista de dados em formato JSON a serem escritos no arquivo.
+    - nome_arquivo (str): Nome do arquivo onde os dados serão escritos ou adicionados.
+
+    Exemplo de uso:
+    ```python
+    json_list = [{'order_id': 1, 'product': 'Item 1'}, {'order_id': 2, 'product': 'Item 2'}]
+    write_file(json_list, 'orders.json')
+    ```
+
+    Se o arquivo já existir, os dados fornecidos serão adicionados aos dados existentes.
+    Se o arquivo não existir, um novo arquivo será criado e os dados serão escritos nele.
+    """
+    if os.path.exists(nome_arquivo):
+        with open(nome_arquivo, "r") as arquivo_existente:
+            dados_existente = json.load(arquivo_existente)
+
+        dados_existente.extend(json_data)
+
+        with open(nome_arquivo, "w") as arquivo:
+            json.dump(dados_existente, arquivo)
+    else:
+        with open(nome_arquivo, "w") as arquivo:
+            json.dump(json_data, arquivo)
