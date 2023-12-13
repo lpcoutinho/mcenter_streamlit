@@ -1,10 +1,9 @@
+# from datetime import datetime, timedelta
 import datetime
 import json
 import math
 import os
 import time
-# from datetime import datetime, timedelta
-import datetime
 
 import numpy as np
 import pandas as pd
@@ -80,9 +79,9 @@ def get_orders_for_date_range(
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     )
 
-    logger.info(f'Iniciando get_orders')
-    logger.info(f'Buscando orders do vendedor {seller_id}')
-    
+    logger.info(f"Iniciando get_orders")
+    logger.info(f"Buscando orders do vendedor {seller_id}")
+
     base_url = "https://api.mercadolibre.com/orders/search"
 
     params = {
@@ -364,12 +363,30 @@ tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
 
 # get_orders_for_date_range(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ot")
-get_orders_for_date_range(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ml_orders")
+get_orders_for_date_range(
+    ACCESS_TOKEN_MUSICALCRIS,
+    SELLER_ID_MUSICALCRIS,
+    today_str,
+    tomorrow_str,
+    "cris_ml_orders",
+)
 
 
 # get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'bueno_ot')
-get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'bueno_ml_orders')
+get_orders_for_date_range(
+    ACCESS_TOKEN_BUENOSHOPS,
+    SELLER_ID_BUENOSHOPS,
+    today_str,
+    tomorrow_str,
+    "bueno_ml_orders",
+)
 
 
 # get_orders_for_date_range(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, today_str, tomorrow_str, "mcenter_ot")
-get_orders_for_date_range(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, today_str, tomorrow_str, "mcenter_ml_orders")
+get_orders_for_date_range(
+    ACCESS_TOKEN_MCENTER,
+    SELLER_ID_MCENTER,
+    today_str,
+    tomorrow_str,
+    "mcenter_ml_orders",
+)

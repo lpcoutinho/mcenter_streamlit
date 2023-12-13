@@ -40,9 +40,9 @@ def get_fulfillment_stock(access_token, db_config, table_item, table_fulfillment
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     )
 
-    logger.info(f'Iniciando get_fulfillment_stock')
-    logger.info(f'Buscando estoque do ful em {table_item} e {table_fulfillment}')
-    
+    logger.info(f"Iniciando get_fulfillment_stock")
+    logger.info(f"Buscando estoque do ful em {table_item} e {table_fulfillment}")
+
     # Informações de conexão com o banco de dados PostgreSQL
     conn = psycopg2.connect(**db_config)
 
@@ -203,7 +203,9 @@ def get_fulfillment_stock(access_token, db_config, table_item, table_fulfillment
 
         insert_query = sql.SQL(query)
 
-        logger.info(f"Inserindo dados em {table_fulfillment}: {[value for value in row]}")
+        logger.info(
+            f"Inserindo dados em {table_fulfillment}: {[value for value in row]}"
+        )
 
         cursor.execute(
             insert_query,
@@ -226,10 +228,16 @@ def get_fulfillment_stock(access_token, db_config, table_item, table_fulfillment
     logger.info(f"Dados inseridos em {table_fulfillment} com sucesso!")
 
 
-get_fulfillment_stock(ACCESS_TOKEN_BUENOSHOPS, db_config, "bueno_items", "bueno_fulfillment_stock")
+get_fulfillment_stock(
+    ACCESS_TOKEN_BUENOSHOPS, db_config, "bueno_items", "bueno_fulfillment_stock"
+)
 
 
-get_fulfillment_stock(ACCESS_TOKEN_MUSICALCRIS, db_config, "cris_items", "cris_fulfillment_stock")
+get_fulfillment_stock(
+    ACCESS_TOKEN_MUSICALCRIS, db_config, "cris_items", "cris_fulfillment_stock"
+)
 
 
-get_fulfillment_stock(ACCESS_TOKEN_MCENTER, db_config, "mcenter_items", "mcenter_fulfillment_stock")
+get_fulfillment_stock(
+    ACCESS_TOKEN_MCENTER, db_config, "mcenter_items", "mcenter_fulfillment_stock"
+)

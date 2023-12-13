@@ -57,14 +57,13 @@ def refresh_tokens(CLIENT_ID, SECRET_KEY, REFRESH_TOKEN, name):
             format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
 
-
         logger.info(f"### Gerando novo access_token e refresh_token para {name} ###")
 
         url = "https://api.mercadolibre.com/oauth/token"
         payload = f"grant_type=refresh_token&client_id={CLIENT_ID}&client_secret={SECRET_KEY}&refresh_token={REFRESH_TOKEN}"
-        
+
         logger.info(f"Payload: {payload}")
-        
+
         headers = {
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",
@@ -80,10 +79,10 @@ def refresh_tokens(CLIENT_ID, SECRET_KEY, REFRESH_TOKEN, name):
 
         access_token = data.get("access_token")
         refresh_token = data.get("refresh_token")
-        
-        logger.info(f'ACCESS_TOKEN {access_token}')
-        logger.info(f'REFRESH_TOKEN {refresh_token}')
-        
+
+        logger.info(f"ACCESS_TOKEN {access_token}")
+        logger.info(f"REFRESH_TOKEN {refresh_token}")
+
         logger.info("Procurando arquivo de configurações")
 
         env_path = find_dotenv()
@@ -110,16 +109,26 @@ def refresh_tokens(CLIENT_ID, SECRET_KEY, REFRESH_TOKEN, name):
         logger.info(f"Tokens {name} atualizados com sucesso.")
         logger.info(f"Novo ACCESS_TOKEN_{name}: {access_token}")
         logger.info(f"Novo REFRESH_TOKEN_{name}: {refresh_token}")
-        
+
     except Exception as e:
         logger.error(f"Error em {name}: {str(e)}")
 
-    
 
-logger.info(f'{CLIENT_ID_MCENTER}, {SECRET_KEY_MCENTER}, {REFRESH_TOKEN_MCENTER}')
-logger.info(f'{CLIENT_ID_BUENOSHOPS}, {SECRET_KEY_BUENOSHOPS}, {REFRESH_TOKEN_BUENOSHOPS}')
-logger.info(f'{CLIENT_ID_MUSICALCRIS}, {SECRET_KEY_MUSICALCRIS}, {REFRESH_TOKEN_MUSICALCRIS}')
+logger.info(f"{CLIENT_ID_MCENTER}, {SECRET_KEY_MCENTER}, {REFRESH_TOKEN_MCENTER}")
+logger.info(
+    f"{CLIENT_ID_BUENOSHOPS}, {SECRET_KEY_BUENOSHOPS}, {REFRESH_TOKEN_BUENOSHOPS}"
+)
+logger.info(
+    f"{CLIENT_ID_MUSICALCRIS}, {SECRET_KEY_MUSICALCRIS}, {REFRESH_TOKEN_MUSICALCRIS}"
+)
 
-refresh_tokens(CLIENT_ID_MCENTER, SECRET_KEY_MCENTER, REFRESH_TOKEN_MCENTER, 'MCENTER')
-refresh_tokens(CLIENT_ID_BUENOSHOPS, SECRET_KEY_BUENOSHOPS, REFRESH_TOKEN_BUENOSHOPS, 'BUENOSHOPS')
-refresh_tokens(CLIENT_ID_MUSICALCRIS, SECRET_KEY_MUSICALCRIS, REFRESH_TOKEN_MUSICALCRIS, 'MUSICALCRIS')
+refresh_tokens(CLIENT_ID_MCENTER, SECRET_KEY_MCENTER, REFRESH_TOKEN_MCENTER, "MCENTER")
+refresh_tokens(
+    CLIENT_ID_BUENOSHOPS, SECRET_KEY_BUENOSHOPS, REFRESH_TOKEN_BUENOSHOPS, "BUENOSHOPS"
+)
+refresh_tokens(
+    CLIENT_ID_MUSICALCRIS,
+    SECRET_KEY_MUSICALCRIS,
+    REFRESH_TOKEN_MUSICALCRIS,
+    "MUSICALCRIS",
+)

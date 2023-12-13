@@ -96,7 +96,7 @@ with col2:
 
         ACCESS_TOKEN_MCENTER = os.getenv("ACCESS_TOKEN_MCENTER")
         SELLER_ID_MCENTER = os.getenv("SELLER_ID_MCENTER")
-        
+
         HOST = os.getenv("HOST")
         POSTGRES_DB = os.getenv("POSTGRES_DB")
         POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -110,7 +110,7 @@ with col2:
         }
 
         # Consulta aos itens com logistic_type=fulfillment
-        base_url = F"https://api.mercadolibre.com/users/{SELLER_ID_MCENTER}/items/search?logistic_type=fulfillment"
+        base_url = f"https://api.mercadolibre.com/users/{SELLER_ID_MCENTER}/items/search?logistic_type=fulfillment"
 
         params = {
             "limit": 100,

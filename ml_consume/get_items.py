@@ -34,6 +34,7 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
+
 def get_items(access_token, seller_id, db_config, table_item):
     logger.add(
         f"Data/Output/Log/{table_item}.log",
@@ -41,9 +42,9 @@ def get_items(access_token, seller_id, db_config, table_item):
         format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     )
 
-    logger.info(f'Iniciando get_items')
-    logger.info(f'Buscando itens do vendedor {seller_id}')
-    
+    logger.info(f"Iniciando get_items")
+    logger.info(f"Buscando itens do vendedor {seller_id}")
+
     start_prog = time.time()  # Registra o inicio da aplicação
 
     load_dotenv()
@@ -117,7 +118,9 @@ def get_items(access_token, seller_id, db_config, table_item):
             response.raise_for_status()
             data = response.json()
             json_list_item.append(data)
-            logger.info(f"Pegando {item} - Tamanho da nova lista: {len(json_list_item)}/{t}")
+            logger.info(
+                f"Pegando {item} - Tamanho da nova lista: {len(json_list_item)}/{t}"
+            )
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao obter dados para o item {item}: {e}")
 
@@ -372,7 +375,9 @@ def get_items(access_token, seller_id, db_config, table_item):
     for index, row in diferenca.iterrows():
         query = f"INSERT INTO {table_item} (ml_code, inventory_id, value_name, status, catalog_listing) VALUES (%s, %s, %s, %s, %s)"
         insert_query = sql.SQL(query)
-        logger.info(f"Inserindo novos dados em {table_item}: {[value for value in row]}")
+        logger.info(
+            f"Inserindo novos dados em {table_item}: {[value for value in row]}"
+        )
         cursor.execute(
             insert_query,
             (
@@ -396,11 +401,10 @@ def get_items(access_token, seller_id, db_config, table_item):
     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
 
 
-get_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, 'bueno_items')
+get_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, "bueno_items")
 
 
-get_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, 'cris_items')
+get_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, "cris_items")
 
 
-get_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, 'mcenter_items')
-
+get_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, "mcenter_items")
