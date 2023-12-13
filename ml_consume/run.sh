@@ -7,8 +7,8 @@ CWD="$(pwd)"
 echo "Diretório de trabalho atual: $CWD"
 
 # Execute o script Python
-python3 bueno_get_itens.py
-python3 bueno_fulfillment_stock.py
+python3 get_itens.py
+python3 get_fulfillment_stock.py
 # python3 routines.py
 
 # python3 test_script.py

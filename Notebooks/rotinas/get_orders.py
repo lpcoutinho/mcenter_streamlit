@@ -1,15 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[10]:
-
-
 import datetime
 import json
 import math
 import os
 import time
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -45,9 +40,6 @@ db_config = {
 }
 
 
-# In[11]:
-
-
 def write_file(json_data, nome_arquivo):
     """
     Escreve dados em um arquivo JSON, adicionando ao arquivo existente se ele já existir.
@@ -76,9 +68,6 @@ def write_file(json_data, nome_arquivo):
     else:
         with open(nome_arquivo, "w") as arquivo:
             json.dump(json_data, arquivo)
-
-
-# In[21]:
 
 
 # Função para obter dados para um intervalo de datas específico
@@ -149,7 +138,7 @@ def get_orders_for_date_range(
     )
     # return json_list
 
-    write_file(json_list, f"../../Data/Output/{table_orders}.json")
+    write_file(json_list, f"Data/Output/{table_orders}.json")
 
     resultados = []
 
@@ -288,7 +277,7 @@ def get_orders_for_date_range(
     logger.info(f"Número de iterações bem-sucedidas: {success_count}")
     logger.info(f"Número de iterações falhadas: {total_iterations - success_count}")
 
-    write_file(json_logistic_list, f"../../Data/Output/{table_orders}shipping.json")
+    write_file(json_logistic_list, f"Data/Output/{table_orders}shipping.json")
 
     dfx = pd.DataFrame(json_logistic_list)
     # cols = ['id', 'order_id', 'logistic_type']
@@ -363,9 +352,6 @@ def get_orders_for_date_range(
     logger.info("Dados inseridos com sucesso!")
 
 
-# In[22]:
-
-
 today = datetime.date.today()
 today = today - datetime.timedelta(days=1)
 tomorrow = today + datetime.timedelta(days=2)
@@ -374,21 +360,12 @@ today_str = today.strftime("%Y-%m-%d")
 tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
 
-# In[23]:
-
-
 get_orders_for_date_range(
     ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, today_str, tomorrow_str, "cris_ot"
 )
 
 
-# In[ ]:
-
-
-# get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'cris_ot')
-
-
-# In[9]:
+get_orders_for_date_range(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, today_str, tomorrow_str, 'cris_ot')
 
 
 get_orders_for_date_range(
