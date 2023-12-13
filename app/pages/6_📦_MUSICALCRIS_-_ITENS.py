@@ -26,7 +26,7 @@ logger.add(
 
 
 load_dotenv(override=True)
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+ACCESS_TOKEN_MUSICALCRIS = os.getenv("ACCESS_TOKEN_MUSICALCRIS")
 HOST = os.getenv("HOST")
 POSTGRES_DB = os.getenv("POSTGRES_DB")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -40,7 +40,7 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
-st.set_page_config(page_title="Itens", page_icon="📦", layout="wide")
+st.set_page_config(page_title="MUSICALCRIS ITENS", page_icon="📦", layout="wide")
 
 # Initialize connection.
 # conn = st.connection("postgresql", type="sql")
@@ -57,12 +57,12 @@ def fetch_data(query):
 
 
 # Consulta SQL
-query = "SELECT * FROM items;"
+query = "SELECT * FROM cris_items;"
 
 # Recupera os dados usando a função fetch_data
 df = fetch_data(query)
 
-st.header("Itens")
+st.header("MUSICALCRIS Itens")
 st.caption("Tabela de itens")
 st.dataframe(df, use_container_width=True)
 
@@ -83,7 +83,7 @@ with col1:
     st.download_button(
         label="Download dos Dados",
         data=excel_buffer.read(),
-        file_name="items.xlsx",
+        file_name="cris_items.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         type="primary",
     )
@@ -94,7 +94,9 @@ with col2:
 
         load_dotenv(override=True)
 
-        ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+        ACCESS_TOKEN_MUSICALCRIS = os.getenv("ACCESS_TOKEN_MUSICALCRIS")
+        SELLER_ID_MUSICALCRIS = os.getenv("SELLER_ID_MUSICALCRIS")
+        
         HOST = os.getenv("HOST")
         POSTGRES_DB = os.getenv("POSTGRES_DB")
         POSTGRES_USER = os.getenv("POSTGRES_USER")
@@ -108,14 +110,14 @@ with col2:
         }
 
         # Consulta aos itens com logistic_type=fulfillment
-        base_url = "https://api.mercadolibre.com/users/233632476/items/search?logistic_type=fulfillment"
+        base_url = F"https://api.mercadolibre.com/users/{SELLER_ID_MUSICALCRIS}/items/search?logistic_type=fulfillment"
 
         params = {
             "limit": 100,
             "offset": 0,
         }
 
-        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+        headers = {"Authorization": f"Bearer {ACCESS_TOKEN_MUSICALCRIS}"}
 
         # buscando lista de códigos
         json_list = []
@@ -159,7 +161,7 @@ with col2:
         c = 1
         for item in json_list:
             base_url = f"https://api.mercadolibre.com/items/{item}"
-            headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+            headers = {"Authorization": f"Bearer {ACCESS_TOKEN_MUSICALCRIS}"}
             t = len(json_list)
             logger.info(item)
             logger.info(f"{c}/{t}")
@@ -355,16 +357,16 @@ with col2:
         # conn.close()
         # logger.info("Dados inseridos com sucesso!")
 
-        # Consulta tabela items do db
+        # Consulta tabela cris_items do db
         try:
             conn = psycopg2.connect(**db_config)
 
-            query = "SELECT * FROM items;"
+            query = "SELECT * FROM cris_items;"
             df_items = pd.read_sql(query, conn)
         except psycopg2.Error as e:
-            logger.error(f"Erro do psycopg2 em 'items': {e}")
+            logger.error(f"Erro do psycopg2 em 'cris_items': {e}")
         except Exception as e:
-            logger.error(f"Erro ao consultar 'items': {e}")
+            logger.error(f"Erro ao consultar 'cris_items': {e}")
 
         dx = df_items.copy()
         dy = df_sku_var.copy()
@@ -430,7 +432,7 @@ with col2:
 
             # Construir a instrução SQL de atualização
             update_query = sql.SQL(
-                "UPDATE items SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s WHERE ml_code = %s AND inventory_id = %s"
+                "UPDATE cris_items SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s WHERE ml_code = %s AND inventory_id = %s"
             )
 
             # Executar a instrução SQL
@@ -450,7 +452,7 @@ with col2:
 
         cursor.close()
         conn.close()
-        logger.info("Dados inseridos com sucesso!")
+        logger.info("Dados atualizados com sucesso em cris_items!")
 
         # Encontrar linhas onde os pares ml_code e inventory_id em df_ficticio são diferentes de dx
         diferenca = pd.merge(
@@ -479,7 +481,7 @@ with col2:
 
         for index, row in diferenca.iterrows():
             insert_query = sql.SQL(
-                "INSERT INTO items (ml_code, inventory_id, value_name, status, catalog_listing) VALUES (%s, %s, %s, %s, %s)"
+                "INSERT INTO cris_items (ml_code, inventory_id, value_name, status, catalog_listing) VALUES (%s, %s, %s, %s, %s)"
             )
             cursor.execute(
                 insert_query,
@@ -497,7 +499,7 @@ with col2:
         # Feche o cursor e a conexão
         cursor.close()
         conn.close()
-        print("Dados inseridos com sucesso!")
+        print("Novos dados inseridos com sucesso em cris_items!")
 
         end_prog = time.time()  # Registra o tempo depois de toda aplicação
         elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido

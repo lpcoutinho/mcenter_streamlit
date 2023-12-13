@@ -20,7 +20,8 @@ POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
 # Interface do Streamlit
-st.title("Produtos a enviar ao Fulfillment")
+st.set_page_config(page_title="MUSICALCRIS FULFILLMENT", layout="wide")
+st.title("MUSICALCRIS para enviar ao Fulfillment")
 
 # Selecionar data da pesquisa
 st.header("Defina o período da consulta", divider="grey")
@@ -72,16 +73,16 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
-        # sql_query = f"SELECT * FROM fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
+        sql_query = f"SELECT * FROM cris_fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
+        # sql_query = f"SELECT * FROM cris_fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
         # print(sql_query)
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar cris_fulfillment_stock: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar fulfillment_stock: {e}")
+        print(f"Erro ao consultar cris_fulfillment_stock: {e}")
 
     finally:
         if conn is not None:
@@ -133,21 +134,21 @@ if st.button("Iniciar Consulta"):
 
     ### Buscando hitorico de orders no BD ###
 
-    # Buscando histórico de vendas na tabela ml_orders_hist para o período definido
+    # Buscando histórico de vendas na tabela cris_ml_orders para o período definido
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        sql_query = f"SELECT * FROM cris_ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
         # print(sql_query)
         df_orders = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        print(f"Erro do psycopg2 ao consultar cris_ml_orders: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar cris_ml_orders: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
+        print(f"Erro ao consultar cris_ml_orders: {e}")
+        # logger.error(f"Erro ao consultar cris_ml_orders: {e}")
 
     finally:
         if conn is not None:
@@ -211,18 +212,18 @@ if st.button("Iniciar Consulta"):
 
     # print(f"Total de vendas = {df_total_sales.shape[0]}")
 
-    # Buscando dados de produtos na tabela tiny_fulfillment
+    # Buscando dados de produtos na tabela cris_items
     try:
         conn = psycopg2.connect(**db_config)
-        sql_query = "SELECT * FROM items"
+        sql_query = "SELECT * FROM cris_items"
         df_codes = pd.read_sql(sql_query, conn)
     except psycopg2.Error as e:
-        # logger.error(f"Erro do psycopg2 ao consultar fulfillment_stock: {e}")
-        print(f"Erro do psycopg2 ao consultar tiny_fulfillment: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar cris_fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar cris_items: {e}")
 
     except Exception as e:
-        # logger.error(f"Erro ao consultar tabela tiny_fulfillment: {e}")
-        print(f"Erro ao consultar tabela tiny_fulfillment: {e}")
+        # logger.error(f"Erro ao consultar tabela cris_items: {e}")
+        print(f"Erro ao consultar tabela cris_items: {e}")
 
     finally:
         if conn is not None:
