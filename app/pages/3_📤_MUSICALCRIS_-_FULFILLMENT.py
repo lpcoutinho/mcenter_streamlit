@@ -360,23 +360,29 @@ if st.button("Iniciar Consulta"):
     days = input_days
 
     df["total_sold"] = df["total_sold_catalog"] + df["total_sold_not_catalog"]
-    
+
     # qtd de produtos a enviar no período, caso seja valor negativo produto está acima do esperado para envio(sobrando)
     df["period_send_fulfillment"] = np.ceil(
         (df["total_sold"] / df["days_available"]) * days
         - df["total_available_quantity"]
     )
-        
+
     df["period_send_fulfillment"] = df["period_send_fulfillment"].fillna(0)
 
     # df.shape
 
     def calculate_percentual_send(row):
         if row["days_available"] != 0:
-            if np.ceil((row["total_sold"] / row["days_available"]) * days * 0.7 > row["total_available_quantity"]):
+            if np.ceil(
+                (row["total_sold"] / row["days_available"]) * days * 0.7
+                > row["total_available_quantity"]
+            ):
                 # return (np.ceil(row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
-                return np.ceil((row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
-    
+                return np.ceil(
+                    (row["total_sold"] / row["days_available"]) * days
+                    - row["total_available_quantity"]
+                )
+
         return 0
 
     # Aplicando a função à coluna "percentual_send"

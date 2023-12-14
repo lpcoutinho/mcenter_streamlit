@@ -369,13 +369,19 @@ if st.button("Iniciar Consulta"):
     df["period_send_fulfillment"] = df["period_send_fulfillment"].fillna(0)
 
     # df.shape
-    
+
     def calculate_percentual_send(row):
         if row["days_available"] != 0:
-            if np.ceil((row["total_sold"] / row["days_available"]) * days * 0.7 > row["total_available_quantity"]):
+            if np.ceil(
+                (row["total_sold"] / row["days_available"]) * days * 0.7
+                > row["total_available_quantity"]
+            ):
                 # return (np.ceil(row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
-                return np.ceil((row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
-    
+                return np.ceil(
+                    (row["total_sold"] / row["days_available"]) * days
+                    - row["total_available_quantity"]
+                )
+
         return 0
 
     # Aplicando a função à coluna "percentual_send"

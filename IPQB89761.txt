@@ -1,0 +1,22 @@
+{
+    "inventory_id": "IPQB89761",
+    "total": 100,
+    "available_quantity": 94,
+    "not_available_quantity": 6,
+    "not_available_detail": [
+        {
+            "status": "noFiscalCoverage",
+            "quantity": 1
+        },
+        {
+            "status": "transfer",
+            "quantity": 5
+        }
+    ],
+    "external_references": [
+        {
+            "type": "item",
+            "id": "MLB1965265311"
+        }
+    ]
+}
