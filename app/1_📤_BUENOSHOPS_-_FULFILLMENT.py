@@ -371,6 +371,17 @@ if st.button("Iniciar Consulta"):
 
     # df.shape
 
+    def calculate_percentual_send(row):
+        if row["days_available"] != 0:
+            if np.ceil((row["total_sold"] / row["days_available"]) * days * 0.7 > row["total_available_quantity"]):
+                # return (np.ceil(row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
+                return np.ceil((row["total_sold"] / row["days_available"]) * days - row["total_available_quantity"])
+    
+        return 0
+
+    # Aplicando a função à coluna "percentual_send"
+    df["stock_replenishment"] = df.apply(calculate_percentual_send, axis=1)
+
     df_have_itens = df[df["days_available"] > 0]
 
     # df_have_itens.shape
@@ -402,6 +413,7 @@ if st.button("Iniciar Consulta"):
         "total_sold_catalog",
         "total_sold",
         "period_send_fulfillment",
+        "stock_replenishment",
     ]
 
     df_sold_zero = df_sold_zero[cols]
