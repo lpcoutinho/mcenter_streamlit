@@ -34,36 +34,17 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
-
-def get_items(access_token, seller_id, db_config, table_item):
-    logger.add(
-        f"Data/Output/Log/{table_item}.log",
-        rotation="10 MB",
-        format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
-    )
-
-    logger.info(f"Iniciando get_items")
-    logger.info(f"Buscando itens do vendedor {seller_id}")
-
+def get_update_items(access_token, seller_id, db_config, table_item):
     start_prog = time.time()  # Registra o inicio da aplicação
-
-    load_dotenv()
-
-    # ACCESS_TOKEN = os.getenv(f"{access_token}")
-    # SELLER_ID = os.getenv(f"{seller_id}")
-
-    ACCESS_TOKEN = access_token
-    SELLER_ID = seller_id
-
     # Consulta aos itens com logistic_type=fulfillment
-    base_url = f"https://api.mercadolibre.com/users/{SELLER_ID}/items/search?logistic_type=fulfillment"
+    base_url = f"https://api.mercadolibre.com/users/{seller_id}/items/search?logistic_type=fulfillment"
 
     params = {
         "limit": 100,
         "offset": 0,
     }
 
-    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
 
     # buscando lista de códigos
     json_list = []
@@ -72,7 +53,7 @@ def get_items(access_token, seller_id, db_config, table_item):
             response = requests.get(base_url, headers=headers, params=params)
             response.raise_for_status()
             data = response.json()
-            # logger.info(data)
+            logger.info(data)
             if "results" in data:
                 json_list.extend(data["results"])
                 logger.info(data["results"])
@@ -99,18 +80,18 @@ def get_items(access_token, seller_id, db_config, table_item):
     except Exception as e:
         logger.error(f"Erro não esperado: {e}")
 
-    logger.info(f"Total esperado de dados: {total_data}")
-    logger.info(f"Total de dados coletados: {len(json_list)}")
+    df_json_list = pd.DataFrame(json_list)
+
 
     # buscando de itens em json
     json_list_item = []
     c = 1
     for item in json_list:
         base_url = f"https://api.mercadolibre.com/items/{item}"
-        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+        headers = {"Authorization": f"Bearer {access_token}"}
         t = len(json_list)
-        # logger.info(item)
-        # logger.info(f"{c}/{t}")
+        logger.info(item)
+        logger.info(f"{c}/{t}")
         c += 1
 
         try:
@@ -118,9 +99,7 @@ def get_items(access_token, seller_id, db_config, table_item):
             response.raise_for_status()
             data = response.json()
             json_list_item.append(data)
-            logger.info(
-                f"Pegando {item} - Tamanho da nova lista: {len(json_list_item)}/{t}"
-            )
+            logger.info(f"Tamanho da nova lista: {len(json_list_item)}/{t}")
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao obter dados para o item {item}: {e}")
 
@@ -140,10 +119,10 @@ def get_items(access_token, seller_id, db_config, table_item):
     with open(caminho_arquivo, "r") as arquivo:
         json_list_item = json.load(arquivo)
 
-    df = pd.DataFrame(json_list_item)
+    df_list_item = pd.DataFrame(json_list_item)
 
-    logger.info(f"Tamanho do dataframe de itens: {df.shape}")
-    df.sample()
+    logger.info(f"Tamanho do dataframe de itens: {df_list_item.shape}")
+    df_list_item.sample()
 
     # pegando dados em attributes
     # attributes: SELLER_SKU
@@ -180,6 +159,7 @@ def get_items(access_token, seller_id, db_config, table_item):
                 "status": status,
                 "variations": variations,
                 "catalog_listing": catalog_listing,
+                "logistic_type":logistic_type,
             }
         )
 
@@ -188,7 +168,7 @@ def get_items(access_token, seller_id, db_config, table_item):
     # pegando dados em variations
     # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id
     resultados_variations = []
-
+        
     for item in json_list_item:
         # Extrair os valores comuns para cada item
         first_id = item.get("id")
@@ -245,6 +225,7 @@ def get_items(access_token, seller_id, db_config, table_item):
         "value_name",
         "status",
         "catalog_listing",
+        "logistic_type"
     ]
     df_sku_var = df_sku_var[cols]
     df_sku_var = df_sku_var.rename(columns={"variation_inventory_id": "inventory_id"})
@@ -256,6 +237,7 @@ def get_items(access_token, seller_id, db_config, table_item):
         conn = psycopg2.connect(**db_config)
 
         # Use a tabela fornecida como parâmetro
+        # query = f"SELECT * FROM {table_item};"
         query = f"SELECT * FROM {table_item};"
         logger.info(query)
         df_items = pd.read_sql(query, conn)
@@ -273,7 +255,161 @@ def get_items(access_token, seller_id, db_config, table_item):
     dx = dx.astype(str)  # altera para tipo string
     dy = dy.astype(str)
 
-    # Merge com base nas colunas ml_code e inventory_id
+    # verificando itens que existiam na tabela e não são retornados pelo endpoint
+    dx_not_in_dy = dx[~dx["inventory_id"].isin(dy["inventory_id"])]
+    # dx_not_in_dy
+
+    # buscando de itens em json
+    json_no_ful = []
+    c = 1
+    for item in dx_not_in_dy["ml_code"]:
+        base_url = f"https://api.mercadolibre.com/items/{item}"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        t = dx_not_in_dy.shape[0]
+        logger.info(item)
+        logger.info(f"{c}/{t}")
+        c += 1
+
+        try:
+            response = requests.get(base_url, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            json_no_ful.append(data)
+            logger.info(f"Tamanho da nova lista: {len(json_no_ful)}/{t}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erro ao obter dados para o item {item}: {e}")
+
+        # Se c for um múltiplo de 50, aguarde 1 minuto
+        if c % 50 == 0:
+            logger.warning("Esperando 1 minuto...")
+            time.sleep(60)
+
+    logger.info(f"Tamanho da lista de itens: {len(json_no_ful)}")
+
+    # Salvando a lista de itens
+    caminho_arquivo = f"Data/Output/list_{table_item}_no_ful.json"
+
+    with open(caminho_arquivo, "w") as arquivo:
+        json.dump(json_no_ful, arquivo)
+
+    with open(caminho_arquivo, "r") as arquivo:
+        json_no_ful = json.load(arquivo)
+
+    df_no_ful = pd.DataFrame(json_no_ful)
+
+    logger.info(f"Tamanho do dataframe de itens: {df_no_ful.shape}")
+    df_no_ful.sample()
+
+    # pegando dados em attributes
+    no_ful_attributes = []
+
+    for item in json_list_item:
+        # Extrair os valores desejados
+        first_id = item["id"]
+        inventory_id = item["inventory_id"]
+        variations = item["variations"]
+        status = item["status"]
+        catalog_product_id = item["catalog_product_id"]
+        seller_custom_field = item["seller_custom_field"]
+        catalog_listing = item["catalog_listing"]
+        logistic_type = item["shipping"]["logistic_type"]
+        item_relations = item["item_relations"]
+
+        # Procurar em "attributes" onde "id" é "SELLER_SKU"
+        seller_sku_entry = next(
+            (attr for attr in item["attributes"] if attr["id"] == "SELLER_SKU"), None
+        )
+
+        # Pegar "value_name" e "value_id" se a entrada existir, caso contrário, definir como None
+        attribute_value_name = (
+            seller_sku_entry["value_name"] if seller_sku_entry else None
+        )
+        attribute_value_id = seller_sku_entry["value_id"] if seller_sku_entry else None
+
+        # Adicionar os no_ful_attributes à lista
+        no_ful_attributes.append(
+            {
+                "ml_code": first_id,
+                "inventory_id": inventory_id,
+                "status": status,
+                "variations": variations,
+                "catalog_listing": catalog_listing,
+                "logistic_type":logistic_type,
+            }
+        )
+
+    df_sku_no_ful = pd.DataFrame(no_ful_attributes)
+
+    # pegando dados em variations
+    # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id
+    no_ful_variations = []
+        
+    for item in json_list_item:
+        # Extrair os valores comuns para cada item
+        first_id = item.get("id")
+        inventory_id = item.get("inventory_id")
+        logistic_type = item.get("shipping", {}).get("logistic_type")
+
+        # Extrair os valores específicos para cada variação
+        for variacao in item.get("variations", []):
+            variation_id = variacao.get("id")
+            variation_seller_sku = variacao.get("seller_custom_field")
+            variation_inventory_id = variacao.get("inventory_id")
+            attribute_combination = variacao.get("attribute_combinations", [{}])[0]
+            value_id = attribute_combination.get("value_id")
+            value_name = attribute_combination.get("value_name")
+            item_relations = attribute_combination.get("item_relations", [{}])[0]
+
+            # Adicionar os no_ful_variations à lista
+            no_ful_variations.append(
+                {
+                    "ml_code": first_id,
+                    "inventory_id": inventory_id,
+                    # "logistic_type": logistic_type,
+                    "variation_id": variation_id,
+                    # "value_id": value_id,
+                    "value_name": value_name,
+                    # "var_seller_sku": variation_seller_sku,
+                    "variation_inventory_id": variation_inventory_id,
+                    # "item_relations":item_relations,
+                }
+            )
+
+    df_no_fulvariations = pd.DataFrame(no_ful_variations)
+
+    # Unindo as duas tabelas
+    df_no_ful = pd.merge(
+        df_sku_no_ful,
+        df_no_fulvariations,
+        left_on=["ml_code", "inventory_id"],
+        right_on=["ml_code", "inventory_id"],
+        how="left",
+    )
+    df_no_ful = df_no_ful.drop(["variations", "variation_id"], axis=1)
+    df_no_ful
+
+    # *se variation_inventory_id = None -> variation_inventory_id == inventory_id && remove inventory_id && variation_inventory_id rename to inventory_id*
+    df_no_ful["variation_inventory_id"].fillna(
+        df_no_ful["inventory_id"], inplace=True
+    )
+
+    # Editando tabela
+    cols = [
+        "ml_code",
+        "variation_inventory_id",
+        "value_name",
+        "status",
+        "catalog_listing",
+        "logistic_type"
+    ]
+    df_no_ful = df_no_ful[cols]
+    df_no_ful = df_no_ful.rename(columns={"variation_inventory_id": "inventory_id"})
+
+    logger.info(f"Tamanho do dataframe final: {df_no_ful.shape}")
+
+    dy = pd.concat([dy, df_no_ful], ignore_index=True)
+
+    # Merge com base nas colunas ml_code e inventory_id a tabela do banco de dados com a busca de hoje + itens fora do full
     merged_df = pd.merge(
         dy,
         dx,
@@ -292,11 +428,12 @@ def get_items(access_token, seller_id, db_config, table_item):
     # Compare os DataFrames
     identicos = dx.equals(dy)
     # Exiba o resultado
-    logger.info("Os DataFrames são idênticos:", identicos)
+    logger.info(f"Os DataFrames são idênticos? {identicos}")
 
     # Encontrar diferenças usando merge
     diferencas = (
-        pd.merge(dx, dy, how="outer", indicator=True)
+        # pd.merge(dx, dy, how="outer", indicator=True)
+        pd.merge(dy, dx, how="outer", indicator=True)
         .query('_merge == "left_only"')
         .drop("_merge", axis=1)
     )
@@ -321,12 +458,13 @@ def get_items(access_token, seller_id, db_config, table_item):
         value_name = row["value_name"]
         status = row["status"]
         catalog_listing = row["catalog_listing"]
+        logistic_type = row["logistic_type"]
         updated_at = datetime.now()  # Use a data/hora atual
 
         # Construir a instrução SQL de atualização
-        query = f"UPDATE {table_item} SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s WHERE ml_code = %s AND inventory_id = %s"
+        query = f"UPDATE {table_item} SET value_name = %s, status = %s, catalog_listing = %s, updated_at = %s, logistic_type = %s  WHERE ml_code = %s AND inventory_id = %s"
         update_query = sql.SQL(query)
-        logger.info(f"Atualizando dados em {table_item}: {[value for value in row]}")
+        logger.info(f"Inserindo dados: {[value for value in row]}")
         # Executar a instrução SQL
         cursor.execute(
             update_query,
@@ -335,6 +473,7 @@ def get_items(access_token, seller_id, db_config, table_item):
                 status,
                 catalog_listing,
                 updated_at,
+                logistic_type,
                 ml_code,
                 inventory_id,
             ),
@@ -344,7 +483,7 @@ def get_items(access_token, seller_id, db_config, table_item):
 
     cursor.close()
     conn.close()
-    logger.info(f"Dados atualizados em {table_item} com sucesso!")
+    logger.info("Dados inseridos com sucesso!")
 
     # Encontrar linhas onde os pares ml_code e inventory_id em df_ficticio são diferentes de dx
     diferenca = pd.merge(
@@ -366,6 +505,7 @@ def get_items(access_token, seller_id, db_config, table_item):
         }
     )
 
+
     # Inserir novos dados no banco de dados
     conn = psycopg2.connect(**db_config)
 
@@ -375,9 +515,7 @@ def get_items(access_token, seller_id, db_config, table_item):
     for index, row in diferenca.iterrows():
         query = f"INSERT INTO {table_item} (ml_code, inventory_id, value_name, status, catalog_listing) VALUES (%s, %s, %s, %s, %s)"
         insert_query = sql.SQL(query)
-        logger.info(
-            f"Inserindo novos dados em {table_item}: {[value for value in row]}"
-        )
+        logger.info(f"Inserindo dados: {[value for value in row]}")
         cursor.execute(
             insert_query,
             (
@@ -394,17 +532,16 @@ def get_items(access_token, seller_id, db_config, table_item):
     # Feche o cursor e a conexão
     cursor.close()
     conn.close()
-    logger.info(f"Novos dados inseridos em {table_item} com sucesso!")
+    logger.info("Atualização de itens finalizada!")
 
     end_prog = time.time()  # Registra o tempo depois de toda aplicação
     elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
+    
+get_update_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, "bueno_items")
 
 
-get_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, "bueno_items")
+get_update_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, "cris_items")
 
 
-get_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, "cris_items")
-
-
-get_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, "mcenter_items")
+get_update_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, "mcenter_items")
