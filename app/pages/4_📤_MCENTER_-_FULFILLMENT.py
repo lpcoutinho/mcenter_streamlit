@@ -423,7 +423,8 @@ if st.button("Iniciar Consulta"):
 
     df_sold_zero = df_sold_zero[cols]
     df_sold = df_sold[cols]
-
+    df_no_itens = df_no_itens[cols]
+    
     def rename_columns(df):
         return df.rename(
             columns={
