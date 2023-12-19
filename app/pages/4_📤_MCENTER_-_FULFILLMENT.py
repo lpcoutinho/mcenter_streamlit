@@ -393,7 +393,7 @@ if st.button("Iniciar Consulta"):
 
     # produtos sem estoque no período
     df_no_itens = df[df["days_available"] <= 0]
-    df_no_itens = df_no_itens.drop(columns=["period_send_fulfillment"])
+    # df_no_itens = df_no_itens.drop(columns=["period_send_fulfillment"])
 
     # df_no_itens.shape
 
