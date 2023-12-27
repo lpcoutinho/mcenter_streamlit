@@ -34,6 +34,7 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
+
 def get_update_items(access_token, seller_id, db_config, table_item):
     start_prog = time.time()  # Registra o inicio da aplicação
     # Consulta aos itens com logistic_type=fulfillment
@@ -81,7 +82,6 @@ def get_update_items(access_token, seller_id, db_config, table_item):
         logger.error(f"Erro não esperado: {e}")
 
     df_json_list = pd.DataFrame(json_list)
-
 
     # buscando de itens em json
     json_list_item = []
@@ -159,7 +159,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
                 "status": status,
                 "variations": variations,
                 "catalog_listing": catalog_listing,
-                "logistic_type":logistic_type,
+                "logistic_type": logistic_type,
             }
         )
 
@@ -168,7 +168,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
     # pegando dados em variations
     # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id
     resultados_variations = []
-        
+
     for item in json_list_item:
         # Extrair os valores comuns para cada item
         first_id = item.get("id")
@@ -225,7 +225,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
         "value_name",
         "status",
         "catalog_listing",
-        "logistic_type"
+        "logistic_type",
     ]
     df_sku_var = df_sku_var[cols]
     df_sku_var = df_sku_var.rename(columns={"variation_inventory_id": "inventory_id"})
@@ -334,7 +334,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
                 "status": status,
                 "variations": variations,
                 "catalog_listing": catalog_listing,
-                "logistic_type":logistic_type,
+                "logistic_type": logistic_type,
             }
         )
 
@@ -343,7 +343,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
     # pegando dados em variations
     # variations: variation_id,  attribute_combination: value_id, value_name, seller_sku ,inventory_id
     no_ful_variations = []
-        
+
     for item in json_list_item:
         # Extrair os valores comuns para cada item
         first_id = item.get("id")
@@ -389,9 +389,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
     df_no_ful
 
     # *se variation_inventory_id = None -> variation_inventory_id == inventory_id && remove inventory_id && variation_inventory_id rename to inventory_id*
-    df_no_ful["variation_inventory_id"].fillna(
-        df_no_ful["inventory_id"], inplace=True
-    )
+    df_no_ful["variation_inventory_id"].fillna(df_no_ful["inventory_id"], inplace=True)
 
     # Editando tabela
     cols = [
@@ -400,7 +398,7 @@ def get_update_items(access_token, seller_id, db_config, table_item):
         "value_name",
         "status",
         "catalog_listing",
-        "logistic_type"
+        "logistic_type",
     ]
     df_no_ful = df_no_ful[cols]
     df_no_ful = df_no_ful.rename(columns={"variation_inventory_id": "inventory_id"})
@@ -505,7 +503,6 @@ def get_update_items(access_token, seller_id, db_config, table_item):
         }
     )
 
-
     # Inserir novos dados no banco de dados
     conn = psycopg2.connect(**db_config)
 
@@ -537,11 +534,16 @@ def get_update_items(access_token, seller_id, db_config, table_item):
     end_prog = time.time()  # Registra o tempo depois de toda aplicação
     elapsed_time = end_prog - start_prog  # Calcula o tempo decorrido
     logger.info(f"Tempo Total do processo: {elapsed_time / 60} minutos")
-    
-get_update_items(ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, "bueno_items")
 
 
-get_update_items(ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, "cris_items")
+get_update_items(
+    ACCESS_TOKEN_BUENOSHOPS, SELLER_ID_BUENOSHOPS, db_config, "bueno_items"
+)
+
+
+get_update_items(
+    ACCESS_TOKEN_MUSICALCRIS, SELLER_ID_MUSICALCRIS, db_config, "cris_items"
+)
 
 
 get_update_items(ACCESS_TOKEN_MCENTER, SELLER_ID_MCENTER, db_config, "mcenter_items")
