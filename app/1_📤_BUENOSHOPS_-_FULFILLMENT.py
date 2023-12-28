@@ -467,7 +467,6 @@ if st.button("Iniciar Consulta"):
         columns={"Quantidade do item": "qtd_item", "Tipo de produto": "type"}
     )
     df_tiny_fulfillment["qtd_item"] = df_tiny_fulfillment["qtd_item"].astype("int64")
-    df_tiny_fulfillment
 
     df_merged = pd.merge(
         df_itens_to_send,
