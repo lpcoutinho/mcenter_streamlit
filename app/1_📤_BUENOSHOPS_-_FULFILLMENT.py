@@ -438,10 +438,12 @@ if st.button("Iniciar Consulta"):
     df_sold = rename_columns(df_sold)
     df_no_itens = rename_columns(df_no_itens)
 
-    ### Agrupando por categoria de produto
-    df_itens_to_send = df_sold[df_sold["stock_replenishment"] > 0]
+    ### Agrupando por categoria de produto para enviar
+    df_itens_to_send = df_sold[df_sold['stock_replenishment'] > 0]
+    df_itens_to_send = df_itens_to_send[['ml_inventory_id','stock_replenishment']]
+    df_itens_to_send = df_itens_to_send.rename(columns={'ml_inventory_id':'inventory_id'})
 
-    # Buscando categorias dos produtos
+    # Buscando relação fulfillment X tiny
     try:
         conn = psycopg2.connect(**db_config)
 
@@ -460,36 +462,45 @@ if st.button("Iniciar Consulta"):
     finally:
         if conn is not None:
             conn.close()
+    
+    # Buscando categorias dos produtos
+    try:
+        conn = psycopg2.connect(**db_config)
 
-    df_tiny_fulfillment = df_tiny_fulfillment.rename(columns={'ID Tiny':'tiny_id','SKU Tiny':'tiny_sku','Quantidade do item': 'qtd_item', 'Tipo de produto': 'type'})
-    df_tiny_fulfillment = df_tiny_fulfillment.drop('ml_code',axis=1)
-    df_tiny_fulfillment['qtd_item'] = df_tiny_fulfillment['qtd_item'].astype('int64')
-    
-    df_merged = pd.merge(df_itens_to_send, df_tiny_fulfillment, left_on='ml_inventory_id', right_on='inventory_id', how='inner')
-    df_merged = df_merged.drop(['inventory_id','seller_sku','title'], axis=1)
-    df_merged = df_merged.rename(columns={'ml_inventory_id':'inventory_id','SKU': 'seller_sku', 'Título do anúncio': 'title'})
+        sql_query = f"SELECT * FROM bueno_types"
+        print(sql_query)
+        df_types = pd.read_sql(sql_query, conn)
 
-    # Calculando quantidade de itens a enviar
-    df_merged["qtd_to_send"] = df_merged["stock_replenishment"] * df_merged["qtd_item"]
-    
-    
-    # df_merged = df_merged[cols] # organizando os dados
+    except psycopg2.Error as e:
+        print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+
+    except Exception as e:
+        print(f"Erro ao consultar ml_orders_hist: {e}")
+        # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+    # Agrupando itens a enviar com tipo de itens
+    df_send_types = pd.merge(df_itens_to_send, df_types, on='inventory_id', how='inner')
     
     # Identificar todos os tipos únicos
-    unique_types = df_merged["type"].unique()
+    unique_types = df_send_types['type'].unique()
 
     # Criar grupos onde cada grupo contém todas as instâncias associadas a um tipo
     result_dfs = []
 
     for unique_type in unique_types:
-        type_group = df_merged[df_merged["type"] == unique_type]
+        type_group = df_send_types[df_send_types['type'] == unique_type]
         result_dfs.append(type_group)
 
-    # Exibir os DataFrames resultantes
+    ## Exibir os DataFrames resultantes
     # for i, result_df in enumerate(result_dfs):
-    #     # print(f"Grupo {i + 1}:\n{result_df}\n")
-    # result_df
-
+    #     print(f"Grupo {i + 1}:\n{result_df}\n")
+    #     result_df
+    
     # Lista para armazenar os DataFrames resultantes de cada agrupamento
     result_dfs_list = []
 
@@ -508,36 +519,44 @@ if st.button("Iniciar Consulta"):
                 if not remaining_rows_df.empty:
                     remaining_rows_dfs.append(remaining_rows_df)
                 else:
-                    print(
-                        f"DataFrame vazio encontrado após extrair a primeira linha:\n{result_df}"
-                    )
+                    print(f"DataFrame vazio encontrado após extrair a primeira linha:\n{result_df}")
 
         # Adiciona o DataFrame resultante de cada agrupamento à lista
         result_dfs_list.append(pd.concat(first_rows_dfs, ignore_index=True))
 
         # Atualiza a lista result_dfs com os DataFrames restantes
         result_dfs = remaining_rows_dfs.copy()
-
-    # # Exibir os DataFrames resultantes de cada agrupamento
-    # for i, result_df in enumerate(result_dfs_list):
-    #     st.write(f"Grupo de envio {i + 1}")
-    #     st.dataframe(result_df, use_container_width=True)
-
+    
     ### Streamlit exibição
 
     st.header("Produtos com vendas no período", divider="grey")
     st.dataframe(df_sold, use_container_width=True)
-    st.write(len(dfx), len(df_sold_zero), len(df_sold))
+    # st.write(len(dfx), len(df_sold_zero), len(df_sold))
     st.header("Produtos sem vendas no período", divider="grey")
     st.dataframe(df_sold_zero, use_container_width=True)
     st.header("Produtos sem estoque no período", divider="grey")
     st.dataframe(df_no_itens, use_container_width=True)
 
     # Exibir os DataFrames resultantes de cada agrupamento
-    cols = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'tiny_id', 'tiny_sku', 'qtd_item', 'stock_replenishment', 'qtd_to_send', 'type']
+    cols = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'stock_replenishment', 'tiny_id', 'tiny_sku', 'qtd_item', 'qtd_to_send', 'type']
 
     st.header("Agrupamento de produtos a enviar", divider="grey")
+    # for i, result_df in enumerate(result_dfs_list):
+    #     st.subheader(f"Grupo de envio {i + 1}")
+    #     result_df = result_df[cols]
+    #     st.dataframe(result_df, use_container_width=True)
+        
+    # Exibir os DataFrames resultantes de cada agrupamento
     for i, result_df in enumerate(result_dfs_list):
-        st.subheader(f"Grupo de envio {i + 1}")
+        result_df = pd.merge(result_df, df_tiny_fulfillment, on='inventory_id', how='inner')
+        result_df = result_df.drop(['Tipo de produto'], axis=1)
+        result_df = result_df.rename(columns={'Quantidade do item':'qtd_item','SKU': 'seller_sku', 'Título do anúncio': 'title','ID Tiny':'tiny_id', 'SKU Tiny':'tiny_sku'})
+        
+        result_df['qtd_to_send'] = result_df['stock_replenishment'] * result_df['qtd_item']
+        result_df['qtd_item'] = result_df['qtd_item'].astype('int64')
+        result_df['qtd_to_send'] = result_df['qtd_to_send'].astype('int64')
+
         result_df = result_df[cols]
+        # print(f"Novo DataFrame do Agrupamento {i + 1}:\n", result_df)
+        st.subheader(f"Grupo de envio {i + 1}")
         st.dataframe(result_df, use_container_width=True)
