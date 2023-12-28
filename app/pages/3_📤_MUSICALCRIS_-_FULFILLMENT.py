@@ -445,9 +445,9 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM cris_types"
+        sql_query = f"SELECT * FROM tiny_fulfillment_cris"
         print(sql_query)
-        df_types = pd.read_sql(sql_query, conn)
+        df_tiny_fulfillment = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
         print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
@@ -461,14 +461,24 @@ if st.button("Iniciar Consulta"):
         if conn is not None:
             conn.close()
 
+    cols = ["inventory_id", "Quantidade do item", "Tipo de produto"]
+    df_tiny_fulfillment = df_tiny_fulfillment[cols]
+    df_tiny_fulfillment = df_tiny_fulfillment.rename(
+        columns={"Quantidade do item": "qtd_item", "Tipo de produto": "type"}
+    )
+    df_tiny_fulfillment["qtd_item"] = df_tiny_fulfillment["qtd_item"].astype("int64")
+    df_tiny_fulfillment
+
     df_merged = pd.merge(
         df_itens_to_send,
-        df_types,
+        df_tiny_fulfillment,
         left_on="ml_inventory_id",
         right_on="inventory_id",
         how="inner",
     )
     df_merged = df_merged.drop("inventory_id", axis=1)
+
+    df_merged["qtd_to_send"] = df_merged["stock_replenishment"] * df_merged["qtd_item"]
 
     # Identificar todos os tipos únicos
     unique_types = df_merged["type"].unique()
