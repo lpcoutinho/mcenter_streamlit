@@ -461,24 +461,20 @@ if st.button("Iniciar Consulta"):
         if conn is not None:
             conn.close()
 
-    cols = ["inventory_id", "Quantidade do item", "Tipo de produto"]
-    df_tiny_fulfillment = df_tiny_fulfillment[cols]
-    df_tiny_fulfillment = df_tiny_fulfillment.rename(
-        columns={"Quantidade do item": "qtd_item", "Tipo de produto": "type"}
-    )
-    df_tiny_fulfillment["qtd_item"] = df_tiny_fulfillment["qtd_item"].astype("int64")
+    df_tiny_fulfillment = df_tiny_fulfillment.rename(columns={'ID Tiny':'tiny_id','SKU Tiny':'tiny_sku','Quantidade do item': 'qtd_item', 'Tipo de produto': 'type'})
+    df_tiny_fulfillment = df_tiny_fulfillment.drop('ml_code',axis=1)
+    df_tiny_fulfillment['qtd_item'] = df_tiny_fulfillment['qtd_item'].astype('int64')
+    
+    df_merged = pd.merge(df_itens_to_send, df_tiny_fulfillment, left_on='ml_inventory_id', right_on='inventory_id', how='inner')
+    df_merged = df_merged.drop(['inventory_id','seller_sku','title'], axis=1)
+    df_merged = df_merged.rename(columns={'ml_inventory_id':'inventory_id','SKU': 'seller_sku', 'Título do anúncio': 'title'})
 
-    df_merged = pd.merge(
-        df_itens_to_send,
-        df_tiny_fulfillment,
-        left_on="ml_inventory_id",
-        right_on="inventory_id",
-        how="inner",
-    )
-    df_merged = df_merged.drop("inventory_id", axis=1)
-
+    # Calculando quantidade de itens a enviar
     df_merged["qtd_to_send"] = df_merged["stock_replenishment"] * df_merged["qtd_item"]
-
+    
+    
+    # df_merged = df_merged[cols] # organizando os dados
+    
     # Identificar todos os tipos únicos
     unique_types = df_merged["type"].unique()
 
@@ -538,7 +534,10 @@ if st.button("Iniciar Consulta"):
     st.dataframe(df_no_itens, use_container_width=True)
 
     # Exibir os DataFrames resultantes de cada agrupamento
+    cols = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'tiny_id', 'tiny_sku', 'qtd_item', 'stock_replenishment', 'qtd_to_send', 'type']
+
     st.header("Agrupamento de produtos a enviar", divider="grey")
     for i, result_df in enumerate(result_dfs_list):
         st.subheader(f"Grupo de envio {i + 1}")
+        result_df = result_df[cols]
         st.dataframe(result_df, use_container_width=True)
