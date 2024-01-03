@@ -799,10 +799,12 @@ if st.button("Iniciar Consulta"):
     # st.write(len(dfx), len(df_sold_zero), len(df_sold))
     st.header("Produtos sem vendas no período", divider="grey")
     # st.dataframe(df_sold_zero, use_container_width=True)
-    st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
+    # st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
+    st.dataframe(df_wms_tf_sold_zero_sum, use_container_width=True)
     st.header("Produtos sem estoque no período", divider="grey")
     # st.dataframe(df_no_itens, use_container_width=True)
-    st.dataframe(df_wms_tf_no_itens, use_container_width=True)
+    # st.dataframe(df_wms_tf_no_itens, use_container_width=True)
+    st.dataframe(df_df_wms_tf_no_itens_sum, use_container_width=True)
 
     # Exibir os DataFrames resultantes de cada agrupamento
     cols = [
