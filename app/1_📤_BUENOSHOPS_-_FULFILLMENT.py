@@ -1,9 +1,11 @@
+import json
 import os
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 import psycopg2
+import requests
 import streamlit as st
 from dotenv import load_dotenv
 from pandas import json_normalize
@@ -18,6 +20,8 @@ HOST = os.getenv("HOST")
 POSTGRES_DB = os.getenv("POSTGRES_DB")
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+
+SMARTGO_TOKEN = os.getenv("SMARTGO_TOKEN")
 
 # Interface do Streamlit
 st.set_page_config(page_title="BUENOSHOPS FULFILLMENT", layout="wide")
@@ -40,15 +44,6 @@ input_days = st.number_input(
     label="Enviar produtos para os próximos x dias", step=1, value=30
 )
 
-
-# ### Período a consultar
-
-# Defina as datas de início e fim desejadas
-# data_inicio = datetime(2023, 11, 1).date()
-# data_fim = datetime(2023, 12, 8).date()
-# data_fim = data_fim + timedelta(days=1)  # + 1 dia para pegar a data atual no DB
-# print(data_fim)
-
 # Informações de conexão com o banco de dados PostgreSQL
 db_config = {
     "host": HOST,
@@ -57,14 +52,82 @@ db_config = {
     "password": POSTGRES_PASSWORD,
 }
 
+
+def get_wms_data(SMARTGO_TOKEN):
+    try:
+        url = "https://apigateway.smartgo.com.br/estoque/saldo"
+
+        payload = {}
+        headers = {"api_key": SMARTGO_TOKEN}
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        if response.status_code == 200:
+            data = json.loads(response.text)
+
+            items = data.get("model", {}).get("items", [])
+
+            result_list = []
+
+            for item in items:
+                result_dict = {
+                    "id_depositante": item.get("idDepositante"),
+                    "depositante": item.get("depositante"),
+                    "area": item.get("area"),
+                    "areaComputaSaldo": item.get("areaComputaSaldo"),
+                    "idProduto": item.get("idProduto"),
+                    "produto_nome": item.get("produtoNome"),
+                    "produtoCodigoInterno": item.get("produtoCodigoInterno"),
+                    "produtoCodigoExterno": item.get("produtoCodigoExterno"),
+                    "quantidade": item.get("quantidade"),
+                    "quantidadeProduto": item.get("quantidadeProduto"),
+                    "quantidadeDeMovimentacao": item.get("quantidadeDeMovimentacao"),
+                    "quantidadeProdutosEmbalagem": item.get(
+                        "quantidadeProdutosEmbalagem"
+                    ),
+                    "tipoUnidadeEmbalagem": item.get("tipoUnidadeEmbalagem"),
+                    "tipoUnidadeMovimentacao": item.get("tipoUnidadeMovimentacao"),
+                    "tipoUnidadeProduto": item.get("tipoUnidadeProduto"),
+                    "quantidadeEnderecos": item.get("quantidadeEnderecos"),
+                    "quantidade_disponivel": item.get("quantidadeDisponivel"),
+                    "quantidadeEmExpedicao": item.get("quantidadeEmExpedicao"),
+                    "pedidosCodigosExternos": item.get("pedidosCodigosExternos"),
+                    "codigosDeIdentificacao": item.get("codigosDeIdentificacao"),
+                    "notasFiscais": item.get("notasFiscais"),
+                    "depositos": item.get("depositos"),
+                }
+                result_list.append(result_dict)
+
+            df = pd.DataFrame(result_list)
+            cols = [
+                "id_depositante",
+                "depositante",
+                "idProduto",
+                "produto_nome",
+                "produtoCodigoInterno",
+                "produtoCodigoExterno",
+                "quantidade_disponivel",
+            ]
+            df = df[cols]
+            return df
+
+    except requests.exceptions.RequestException as e:
+        print(f"Request Exception: {e}")
+        return None
+
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error: {e}")
+        return None
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
 # Botão para iniciar a consulta
 if st.button("Iniciar Consulta"):
     # Exibe uma mensagem enquanto a consulta está em andamento
     mensagem_aguarde = st.warning("Aguarde, a consulta está em andamento...")
-
-    # # Remove a mensagem de aviso e exibe os resultados
-    mensagem_aguarde.empty()
-    st.success("Consulta concluída com sucesso!")
 
     # TODO ModuleNotFoundError: No module named 'ml_consume'
     # dfx, df_sold_zero, df_sold = send_fulfillment()
@@ -234,6 +297,7 @@ if st.button("Iniciar Consulta"):
     df_codes.rename(columns={"inventory_id": "ml_inventory_id"}, inplace=True)
     df_codes = df_codes.drop(["created_at", "updated_at"], axis=1)
 
+    # separando itens que são catálogos dos que não são
     df_not_catalogo = df_codes[df_codes["catalog_listing"] == False]
     df_catalogo = df_codes[df_codes["catalog_listing"] == True]
 
@@ -439,9 +503,11 @@ if st.button("Iniciar Consulta"):
     df_no_itens = rename_columns(df_no_itens)
 
     ### Agrupando por categoria de produto para enviar
-    df_itens_to_send = df_sold[df_sold['stock_replenishment'] > 0]
-    df_itens_to_send = df_itens_to_send[['ml_inventory_id','stock_replenishment']]
-    df_itens_to_send = df_itens_to_send.rename(columns={'ml_inventory_id':'inventory_id'})
+    df_itens_to_send = df_sold[df_sold["stock_replenishment"] > 0]
+    df_itens_to_send = df_itens_to_send[["ml_inventory_id", "stock_replenishment"]]
+    df_itens_to_send = df_itens_to_send.rename(
+        columns={"ml_inventory_id": "inventory_id"}
+    )
 
     # Buscando relação fulfillment X tiny
     try:
@@ -462,7 +528,7 @@ if st.button("Iniciar Consulta"):
     finally:
         if conn is not None:
             conn.close()
-    
+
     # Buscando categorias dos produtos
     try:
         conn = psycopg2.connect(**db_config)
@@ -484,23 +550,23 @@ if st.button("Iniciar Consulta"):
             conn.close()
 
     # Agrupando itens a enviar com tipo de itens
-    df_send_types = pd.merge(df_itens_to_send, df_types, on='inventory_id', how='inner')
-    
+    df_send_types = pd.merge(df_itens_to_send, df_types, on="inventory_id", how="inner")
+
     # Identificar todos os tipos únicos
-    unique_types = df_send_types['type'].unique()
+    unique_types = df_send_types["type"].unique()
 
     # Criar grupos onde cada grupo contém todas as instâncias associadas a um tipo
     result_dfs = []
 
     for unique_type in unique_types:
-        type_group = df_send_types[df_send_types['type'] == unique_type]
+        type_group = df_send_types[df_send_types["type"] == unique_type]
         result_dfs.append(type_group)
 
     ## Exibir os DataFrames resultantes
     # for i, result_df in enumerate(result_dfs):
     #     print(f"Grupo {i + 1}:\n{result_df}\n")
     #     result_df
-    
+
     # Lista para armazenar os DataFrames resultantes de cada agrupamento
     result_dfs_list = []
 
@@ -519,42 +585,235 @@ if st.button("Iniciar Consulta"):
                 if not remaining_rows_df.empty:
                     remaining_rows_dfs.append(remaining_rows_df)
                 else:
-                    print(f"DataFrame vazio encontrado após extrair a primeira linha:\n{result_df}")
+                    print(
+                        f"DataFrame vazio encontrado após extrair a primeira linha:\n{result_df}"
+                    )
 
         # Adiciona o DataFrame resultante de cada agrupamento à lista
         result_dfs_list.append(pd.concat(first_rows_dfs, ignore_index=True))
 
         # Atualiza a lista result_dfs com os DataFrames restantes
         result_dfs = remaining_rows_dfs.copy()
-    
+
+    ### Contando estoque da WMS em Produtos sem estoque no período
+
+    # buscando dados da SmartGo
+    df_wms = get_wms_data(SMARTGO_TOKEN)
+
+    # renomeando colunas
+    dic_column_name = {"ml_inventory_id": "inventory_id"}
+    df_no_itens = df_no_itens.rename(columns=dic_column_name)
+    df_sold_zero = df_sold_zero.rename(columns=dic_column_name)
+
+    # unindo df de 'sem itens' com a relação tiny x fulfillment
+    df_tiny_fulfillment_no_itens = pd.merge(
+        df_no_itens, df_tiny_fulfillment, on="inventory_id", how="inner"
+    )
+
+    # organizando dados
+    df_tiny_fulfillment_no_itens = df_tiny_fulfillment_no_itens.drop(
+        columns=["ml_code_y", "seller_sku", "title"]
+    )
+
+    dic_new_names = {
+        "ml_code_x": "ml_code",
+        "SKU": "seller_sku",
+        "Título do anúncio": "title",
+        "Quantidade do item": "qtd_item",
+        "ID Tiny": "tiny_id",
+        "SKU Tiny": "tiny_sku",
+        "Tipo de produto": "type",
+    }
+    df_tiny_fulfillment_no_itens = df_tiny_fulfillment_no_itens.rename(
+        columns=dic_new_names
+    )
+
+    cols = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "type",
+        "stock_replenishment",
+        "status",
+    ]
+
+    df_tiny_fulfillment_no_itens = df_tiny_fulfillment_no_itens[cols]
+
+    # Unindo dfs por tiny_sku e códigos externos e internos
+    df_wms_tf_no_itens_ci = pd.merge(
+        df_tiny_fulfillment_no_itens,
+        df_wms,
+        left_on="tiny_sku",
+        right_on="produtoCodigoInterno",
+    )
+    df_wms_tf_no_itens_ce = pd.merge(
+        df_tiny_fulfillment_no_itens,
+        df_wms,
+        left_on="tiny_sku",
+        right_on="produtoCodigoExterno",
+    )
+
+    # concatenando os dfs
+    df_wms_tf_no_itens = pd.concat(
+        [df_wms_tf_no_itens_ci, df_wms_tf_no_itens_ce], ignore_index=True
+    )
+    df_wms_tf_no_itens = df_wms_tf_no_itens.drop_duplicates()
+
+    cols = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "stock_replenishment",
+        "status",
+        "produtoCodigoInterno",
+        "produtoCodigoExterno",
+        "quantidade_disponivel",
+    ]
+
+    df_wms_tf_no_itens = df_wms_tf_no_itens[cols]
+
+    ### Contando estoque da WMS em Produtos sem vendas no período
+
+    # unindo df de 'sem vendar' com a relação tiny x fulfillment
+    df_tiny_fulfillment_sold_zero = pd.merge(
+        df_sold_zero, df_tiny_fulfillment, on="inventory_id", how="inner"
+    )
+
+    # organizando dados
+    df_tiny_fulfillment_sold_zero = df_tiny_fulfillment_sold_zero.drop(
+        columns=["ml_code_y", "seller_sku", "title"]
+    )
+
+    dic_new_names = {
+        "ml_code_x": "ml_code",
+        "SKU": "seller_sku",
+        "Título do anúncio": "title",
+        "Quantidade do item": "qtd_item",
+        "ID Tiny": "tiny_id",
+        "SKU Tiny": "tiny_sku",
+        "Tipo de produto": "type",
+    }
+    df_tiny_fulfillment_sold_zero = df_tiny_fulfillment_sold_zero.rename(
+        columns=dic_new_names
+    )
+
+    cols = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "type",
+        "stock_replenishment",
+        "status",
+    ]
+
+    df_tiny_fulfillment_sold_zero = df_tiny_fulfillment_sold_zero[cols]
+
+    # Unindo dfs por tiny_sku e códigos externos e internos
+    df_wms_tf_sold_zero_ci = pd.merge(
+        df_tiny_fulfillment_sold_zero,
+        df_wms,
+        left_on="tiny_sku",
+        right_on="produtoCodigoInterno",
+    )
+    df_wms_tf_sold_zero_ce = pd.merge(
+        df_tiny_fulfillment_sold_zero,
+        df_wms,
+        left_on="tiny_sku",
+        right_on="produtoCodigoExterno",
+    )
+
+    # concatenando os dfs
+    df_wms_tf_sold_zero = pd.concat(
+        [df_wms_tf_sold_zero_ci, df_wms_tf_sold_zero_ce], ignore_index=True
+    )
+    df_wms_tf_sold_zero = df_wms_tf_sold_zero.drop_duplicates()
+
+    cols = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "stock_replenishment",
+        "status",
+        "produtoCodigoInterno",
+        "produtoCodigoExterno",
+        "quantidade_disponivel",
+    ]
+
+    df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
+
     ### Streamlit exibição
+
+    # # Remove a mensagem de aviso e exibe os resultados
+    mensagem_aguarde.empty()
+    st.success("Consulta concluída com sucesso!")
 
     st.header("Produtos com vendas no período", divider="grey")
     st.dataframe(df_sold, use_container_width=True)
     # st.write(len(dfx), len(df_sold_zero), len(df_sold))
     st.header("Produtos sem vendas no período", divider="grey")
-    st.dataframe(df_sold_zero, use_container_width=True)
+    # st.dataframe(df_sold_zero, use_container_width=True)
+    st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
     st.header("Produtos sem estoque no período", divider="grey")
-    st.dataframe(df_no_itens, use_container_width=True)
+    # st.dataframe(df_no_itens, use_container_width=True)
+    st.dataframe(df_wms_tf_no_itens, use_container_width=True)
 
     # Exibir os DataFrames resultantes de cada agrupamento
-    cols = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'stock_replenishment', 'tiny_id', 'tiny_sku', 'qtd_item', 'qtd_to_send', 'type']
+    cols = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "stock_replenishment",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "qtd_to_send",
+        "type",
+    ]
 
     st.header("Agrupamento de produtos a enviar", divider="grey")
     # for i, result_df in enumerate(result_dfs_list):
     #     st.subheader(f"Grupo de envio {i + 1}")
     #     result_df = result_df[cols]
     #     st.dataframe(result_df, use_container_width=True)
-        
+
     # Exibir os DataFrames resultantes de cada agrupamento
     for i, result_df in enumerate(result_dfs_list):
-        result_df = pd.merge(result_df, df_tiny_fulfillment, on='inventory_id', how='inner')
-        result_df = result_df.drop(['Tipo de produto'], axis=1)
-        result_df = result_df.rename(columns={'Quantidade do item':'qtd_item','SKU': 'seller_sku', 'Título do anúncio': 'title','ID Tiny':'tiny_id', 'SKU Tiny':'tiny_sku'})
-        
-        result_df['qtd_to_send'] = result_df['stock_replenishment'] * result_df['qtd_item']
-        result_df['qtd_item'] = result_df['qtd_item'].astype('int64')
-        result_df['qtd_to_send'] = result_df['qtd_to_send'].astype('int64')
+        result_df = pd.merge(
+            result_df, df_tiny_fulfillment, on="inventory_id", how="inner"
+        )
+        result_df = result_df.drop(["Tipo de produto"], axis=1)
+        result_df = result_df.rename(
+            columns={
+                "Quantidade do item": "qtd_item",
+                "SKU": "seller_sku",
+                "Título do anúncio": "title",
+                "ID Tiny": "tiny_id",
+                "SKU Tiny": "tiny_sku",
+            }
+        )
+
+        result_df["qtd_to_send"] = (
+            result_df["stock_replenishment"] * result_df["qtd_item"]
+        )
+        result_df["qtd_item"] = result_df["qtd_item"].astype("int64")
+        result_df["qtd_to_send"] = result_df["qtd_to_send"].astype("int64")
 
         result_df = result_df[cols]
         # print(f"Novo DataFrame do Agrupamento {i + 1}:\n", result_df)
