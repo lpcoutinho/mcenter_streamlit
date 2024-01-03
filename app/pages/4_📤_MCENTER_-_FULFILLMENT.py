@@ -757,6 +757,38 @@ if st.button("Iniciar Consulta"):
 
     df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
 
+    ## Removendo e somando duplicatas
+    # Lista das colunas que devem ser usadas para identificar linhas repetidas
+    cols_to_check_duplicates = [
+        "inventory_id",
+        "ml_code",
+        "seller_sku",
+        "title",
+        "tiny_id",
+        "tiny_sku",
+        "qtd_item",
+        "stock_replenishment",
+        "status",
+        "produtoCodigoInterno",
+        "produtoCodigoExterno",
+    ]
+
+    # Agrupar por linhas repetidas e somar a coluna quantidade_disponivel
+    df_df_wms_tf_no_itens_sum = (
+        df_wms_tf_no_itens.groupby(cols_to_check_duplicates)["quantidade_disponivel"]
+        .sum()
+        .reset_index()
+    )
+    df_wms_tf_sold_zero_sum = (
+        df_wms_tf_sold_zero.groupby(cols_to_check_duplicates)["quantidade_disponivel"]
+        .sum()
+        .reset_index()
+    )
+
+    # organizando
+    df_df_wms_tf_no_itens_sum = df_df_wms_tf_no_itens_sum[cols]
+    df_wms_tf_sold_zero_sum = df_wms_tf_sold_zero_sum[cols]
+
     ### Streamlit exibição
     # # Remove a mensagem de aviso e exibe os resultados
     mensagem_aguarde.empty()
