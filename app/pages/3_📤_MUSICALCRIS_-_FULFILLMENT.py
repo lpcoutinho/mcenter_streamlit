@@ -790,7 +790,7 @@ if st.button("Iniciar Consulta"):
     ]
 
     # Agrupar por linhas repetidas e somar a coluna quantidade_disponivel
-    df_df_wms_tf_no_itens_sum = (
+    df_wms_tf_no_itens_sum = (
         df_wms_tf_no_itens.groupby(cols_to_check_duplicates)["quantidade_disponivel"]
         .sum()
         .reset_index()
