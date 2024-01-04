@@ -810,8 +810,8 @@ if st.button("Iniciar Consulta"):
     df_wms_tf_sold_zero = df_wms_tf_sold_zero.drop_duplicates()
  
     # organizando
-    df_df_wms_tf_no_itens_sum = df_df_wms_tf_no_itens_sum[cols]
-    df_wms_tf_sold_zero_sum = df_wms_tf_sold_zero_sum[cols]
+    df_wms_tf_no_itens = df_wms_tf_no_itens[cols]
+    df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
 
     ### Streamlit exibição
     # # Remove a mensagem de aviso e exibe os resultados
@@ -823,12 +823,10 @@ if st.button("Iniciar Consulta"):
     # st.write(len(dfx), len(df_sold_zero), len(df_sold))
     st.header("Produtos sem vendas no período", divider="grey")
     # st.dataframe(df_sold_zero, use_container_width=True)
-    # st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
-    st.dataframe(df_wms_tf_sold_zero_sum, use_container_width=True)
+    st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
     st.header("Produtos sem estoque no período", divider="grey")
     # st.dataframe(df_no_itens, use_container_width=True)
-    # st.dataframe(df_wms_tf_no_itens, use_container_width=True)
-    st.dataframe(df_df_wms_tf_no_itens_sum, use_container_width=True)
+    st.dataframe(df_wms_tf_no_itens, use_container_width=True)
 
     # Exibir os DataFrames resultantes de cada agrupamento
     cols = [
