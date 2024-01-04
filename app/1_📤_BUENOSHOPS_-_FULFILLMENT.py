@@ -649,12 +649,14 @@ if st.button("Iniciar Consulta"):
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoInterno",
+        how='left'
     )
     df_wms_tf_no_itens_ce = pd.merge(
         df_tiny_fulfillment_no_itens,
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoExterno",
+        how='left'
     )
 
     # concatenando os dfs
@@ -726,12 +728,14 @@ if st.button("Iniciar Consulta"):
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoInterno",
+        how='left'
     )
     df_wms_tf_sold_zero_ce = pd.merge(
         df_tiny_fulfillment_sold_zero,
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoExterno",
+        how='left'
     )
 
     # concatenando os dfs
