@@ -24,9 +24,9 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 SMARTGO_TOKEN = os.getenv("SMARTGO_TOKEN")
 
 # Interface do Streamlit
-st.set_page_config(page_title="BUENOSHOPS FULFILLMENT", layout="wide")
+st.set_page_config(page_title="MCENTER FULFILLMENT", layout="wide")
 
-st.title("BUENOSHOPS para enviar ao Fulfillment")
+st.title("MCENTER para enviar ao Fulfillment")
 
 # Selecionar data da pesquisa
 st.header("Defina o período da consulta", divider="grey")
@@ -137,16 +137,16 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
-        # sql_query = f"SELECT * FROM bueno_fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
+        sql_query = f"SELECT * FROM mcenter_fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
+        # sql_query = f"SELECT * FROM mcenter_fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
         # print(sql_query)
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar bueno_fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar mcenter_fulfillment_stock: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar bueno_fulfillment_stock: {e}")
+        print(f"Erro ao consultar mcenter_fulfillment_stock: {e}")
 
     finally:
         if conn is not None:
@@ -198,21 +198,21 @@ if st.button("Iniciar Consulta"):
 
     ### Buscando hitorico de orders no BD ###
 
-    # Buscando histórico de vendas na tabela bueno_ml_orders para o período definido
+    # Buscando histórico de vendas na tabela mcenter_ml_orders para o período definido
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        sql_query = f"SELECT * FROM mcenter_ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
         # print(sql_query)
         df_orders = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar bueno_ml_orders: {e}")
-        # logger.error(f"Erro do psycopg2 ao consultar bueno_ml_orders: {e}")
+        print(f"Erro do psycopg2 ao consultar mcenter_ml_orders: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar mcenter_ml_orders: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar bueno_ml_orders: {e}")
-        # logger.error(f"Erro ao consultar bueno_ml_orders: {e}")
+        print(f"Erro ao consultar mcenter_ml_orders: {e}")
+        # logger.error(f"Erro ao consultar mcenter_ml_orders: {e}")
 
     finally:
         if conn is not None:
@@ -276,18 +276,18 @@ if st.button("Iniciar Consulta"):
 
     # print(f"Total de vendas = {df_total_sales.shape[0]}")
 
-    # Buscando dados de produtos na tabela bueno_items
+    # Buscando dados de produtos na tabela mcenter_items
     try:
         conn = psycopg2.connect(**db_config)
-        sql_query = "SELECT * FROM bueno_items"
+        sql_query = "SELECT * FROM mcenter_items"
         df_codes = pd.read_sql(sql_query, conn)
     except psycopg2.Error as e:
-        # logger.error(f"Erro do psycopg2 ao consultar bueno_fulfillment_stock: {e}")
-        print(f"Erro do psycopg2 ao consultar bueno_items: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar mcenter_fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar mcenter_items: {e}")
 
     except Exception as e:
-        # logger.error(f"Erro ao consultar tabela bueno_items: {e}")
-        print(f"Erro ao consultar tabela bueno_items: {e}")
+        # logger.error(f"Erro ao consultar tabela mcenter_items: {e}")
+        print(f"Erro ao consultar tabela mcenter_items: {e}")
 
     finally:
         if conn is not None:
@@ -513,7 +513,7 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM tiny_fulfillment_bueno"
+        sql_query = f"SELECT * FROM tiny_fulfillment_mcenter"
         print(sql_query)
         df_tiny_fulfillment = pd.read_sql(sql_query, conn)
 
@@ -533,7 +533,7 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_types"
+        sql_query = f"SELECT * FROM mcenter_types"
         print(sql_query)
         df_types = pd.read_sql(sql_query, conn)
 
@@ -694,7 +694,7 @@ if st.button("Iniciar Consulta"):
 
     ### Contando estoque da WMS em Produtos sem vendas no período
 
-    # unindo df de 'sem vendas' com a relação tiny x fulfillment
+    # unindo df de 'sem vendar' com a relação tiny x fulfillment
     df_tiny_fulfillment_sold_zero = pd.merge(
         df_sold_zero, df_tiny_fulfillment, on="inventory_id", how="inner"
     )
@@ -825,7 +825,6 @@ if st.button("Iniciar Consulta"):
     df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
 
     ### Streamlit exibição
-
     # # Remove a mensagem de aviso e exibe os resultados
     mensagem_aguarde.empty()
     st.success("Consulta concluída com sucesso!")
@@ -836,7 +835,6 @@ if st.button("Iniciar Consulta"):
     st.header("Produtos sem vendas no período", divider="grey")
     # st.dataframe(df_sold_zero, use_container_width=True)
     st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
-
     st.header("Produtos sem estoque no período", divider="grey")
     # st.dataframe(df_no_itens, use_container_width=True)
     st.dataframe(df_wms_tf_no_itens, use_container_width=True)

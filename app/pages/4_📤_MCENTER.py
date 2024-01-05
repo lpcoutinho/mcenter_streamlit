@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta
+from math import floor
 
 import numpy as np
 import pandas as pd
@@ -23,10 +24,26 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
 SMARTGO_TOKEN = os.getenv("SMARTGO_TOKEN")
 
-# Interface do Streamlit
-st.set_page_config(page_title="BUENOSHOPS FULFILLMENT", layout="wide")
+# Informações de conexão com o banco de dados PostgreSQL
+db_config = {
+    "host": HOST,
+    "database": POSTGRES_DB,
+    "user": POSTGRES_USER,
+    "password": POSTGRES_PASSWORD,
+}
 
-st.title("BUENOSHOPS para enviar ao Fulfillment")
+# variaveis de projeto
+empresa = 'MCENTER'
+table_ful_stock = 'mcenter_fulfillment_stock'
+table_orders = 'mcenter_ml_orders'
+table_items = 'mcenter_items'
+table_tf = 'tiny_fulfillment_mcenter'
+table_types = 'mcenter_types'
+
+# Interface do Streamlit
+st.set_page_config(page_title=f"{empresa} FULFILLMENT", layout="wide")
+
+st.title(f"{empresa} para enviar ao Fulfillment")
 
 # Selecionar data da pesquisa
 st.header("Defina o período da consulta", divider="grey")
@@ -44,13 +61,6 @@ input_days = st.number_input(
     label="Enviar produtos para os próximos x dias", step=1, value=30
 )
 
-# Informações de conexão com o banco de dados PostgreSQL
-db_config = {
-    "host": HOST,
-    "database": POSTGRES_DB,
-    "user": POSTGRES_USER,
-    "password": POSTGRES_PASSWORD,
-}
 
 
 def get_wms_data(SMARTGO_TOKEN):
@@ -137,16 +147,16 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_fulfillment_stock WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
-        # sql_query = f"SELECT * FROM bueno_fulfillment_stock WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
+        sql_query = f"SELECT * FROM {table_ful_stock} WHERE created_at BETWEEN '{date_from}' AND '{date_to};'"
+        # sql_query = f"SELECT * FROM {table_ful_stock} WHERE created_at BETWEEN '2023-12-04' AND '2023-12-05';"
         # print(sql_query)
         df_stock = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar bueno_fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar {table_ful_stock}: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar bueno_fulfillment_stock: {e}")
+        print(f"Erro ao consultar {table_ful_stock}: {e}")
 
     finally:
         if conn is not None:
@@ -198,21 +208,21 @@ if st.button("Iniciar Consulta"):
 
     ### Buscando hitorico de orders no BD ###
 
-    # Buscando histórico de vendas na tabela bueno_ml_orders para o período definido
+    # Buscando histórico de vendas na tabela {table_orders} para o período definido
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_ml_orders WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
+        sql_query = f"SELECT * FROM {table_orders} WHERE date_closed BETWEEN '{date_from}' AND '{date_to}'"
         # print(sql_query)
         df_orders = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar bueno_ml_orders: {e}")
-        # logger.error(f"Erro do psycopg2 ao consultar bueno_ml_orders: {e}")
+        print(f"Erro do psycopg2 ao consultar {table_orders}: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar {table_orders}: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar bueno_ml_orders: {e}")
-        # logger.error(f"Erro ao consultar bueno_ml_orders: {e}")
+        print(f"Erro ao consultar {table_orders}: {e}")
+        # logger.error(f"Erro ao consultar {table_orders}: {e}")
 
     finally:
         if conn is not None:
@@ -276,18 +286,18 @@ if st.button("Iniciar Consulta"):
 
     # print(f"Total de vendas = {df_total_sales.shape[0]}")
 
-    # Buscando dados de produtos na tabela bueno_items
+    # Buscando dados de produtos na tabela {table_items}
     try:
         conn = psycopg2.connect(**db_config)
-        sql_query = "SELECT * FROM bueno_items"
+        sql_query = f"SELECT * FROM {table_items}"
         df_codes = pd.read_sql(sql_query, conn)
     except psycopg2.Error as e:
-        # logger.error(f"Erro do psycopg2 ao consultar bueno_fulfillment_stock: {e}")
-        print(f"Erro do psycopg2 ao consultar bueno_items: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar mcenter_fulfillment_stock: {e}")
+        print(f"Erro do psycopg2 ao consultar {table_items}: {e}")
 
     except Exception as e:
-        # logger.error(f"Erro ao consultar tabela bueno_items: {e}")
-        print(f"Erro ao consultar tabela bueno_items: {e}")
+        # logger.error(f"Erro ao consultar tabela {table_items}: {e}")
+        print(f"Erro ao consultar tabela {table_items}: {e}")
 
     finally:
         if conn is not None:
@@ -513,17 +523,17 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM tiny_fulfillment_bueno"
+        sql_query = f"SELECT * FROM {table_tf}"
         print(sql_query)
         df_tiny_fulfillment = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        print(f"Erro do psycopg2 ao consultar {table_tf}: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar {table_tf}: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
+        print(f"Erro ao consultar {table_tf}: {e}")
+        # logger.error(f"Erro ao consultar {table_tf}: {e}")
 
     finally:
         if conn is not None:
@@ -533,17 +543,17 @@ if st.button("Iniciar Consulta"):
     try:
         conn = psycopg2.connect(**db_config)
 
-        sql_query = f"SELECT * FROM bueno_types"
+        sql_query = f"SELECT * FROM {table_types}"
         print(sql_query)
         df_types = pd.read_sql(sql_query, conn)
 
     except psycopg2.Error as e:
-        print(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro do psycopg2 ao consultar ml_orders_hist: {e}")
+        print(f"Erro do psycopg2 ao consultar {table_types}: {e}")
+        # logger.error(f"Erro do psycopg2 ao consultar {table_types}: {e}")
 
     except Exception as e:
-        print(f"Erro ao consultar ml_orders_hist: {e}")
-        # logger.error(f"Erro ao consultar ml_orders_hist: {e}")
+        print(f"Erro ao consultar {table_types}: {e}")
+        # logger.error(f"Erro ao consultar {table_types}: {e}")
 
     finally:
         if conn is not None:
@@ -694,7 +704,7 @@ if st.button("Iniciar Consulta"):
 
     ### Contando estoque da WMS em Produtos sem vendas no período
 
-    # unindo df de 'sem vendas' com a relação tiny x fulfillment
+    # unindo df de 'sem vendar' com a relação tiny x fulfillment
     df_tiny_fulfillment_sold_zero = pd.merge(
         df_sold_zero, df_tiny_fulfillment, on="inventory_id", how="inner"
     )
@@ -825,7 +835,6 @@ if st.button("Iniciar Consulta"):
     df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
 
     ### Streamlit exibição
-
     # # Remove a mensagem de aviso e exibe os resultados
     mensagem_aguarde.empty()
     st.success("Consulta concluída com sucesso!")
@@ -836,7 +845,6 @@ if st.button("Iniciar Consulta"):
     st.header("Produtos sem vendas no período", divider="grey")
     # st.dataframe(df_sold_zero, use_container_width=True)
     st.dataframe(df_wms_tf_sold_zero, use_container_width=True)
-
     st.header("Produtos sem estoque no período", divider="grey")
     # st.dataframe(df_no_itens, use_container_width=True)
     st.dataframe(df_wms_tf_no_itens, use_container_width=True)
@@ -884,6 +892,71 @@ if st.button("Iniciar Consulta"):
         result_df["qtd_to_send"] = result_df["qtd_to_send"].astype("int64")
 
         result_df = result_df[cols]
+        
+        ##############################################################################################
+        resultado = pd.merge(result_df, df_wms, left_on='tiny_sku', right_on='produtoCodigoInterno', how='inner')
+        resultado['produtoCodigoInterno'].fillna(resultado['tiny_sku'], inplace=True)
+
+        df_envio = resultado.copy()
+        # Função para aplicar nas linhas do DataFrame
+        def ajustar_envio(row):
+            if (row['quantidade_disponivel'] < row['qtd_to_send']) and (row['quantidade_disponivel'] > 0):
+                return row['quantidade_disponivel']
+            elif row['quantidade_disponivel'] > row['qtd_to_send']:
+                return row['qtd_to_send']
+            else:
+                return 0
+
+        # Criar a coluna 'envio_ajust' aplicando a função nas linhas
+        df_envio['envio_ajust'] = df_envio.apply(ajustar_envio, axis=1)
+
+        # Produtos sem estoque 
+        df_no_stock = df_envio[(df_envio['quantidade_disponivel'] <  0)]
+
+        # Produtos com estoque menor que o solicitado e quantidade disponível maior que 0
+        df_less_stock = df_envio[(df_envio['quantidade_disponivel'] < df_envio['qtd_to_send']) & (df_envio['quantidade_disponivel'] > 0)]
+
+        # Encontrar as linhas comuns entre df_envio e df_no_stock
+        common_rows = pd.merge(df_envio, df_no_stock, how='inner')
+
+        # Remover as linhas comuns de df_envio
+        df_envio = df_envio[~df_envio.isin(common_rows.to_dict(orient='list')).all(axis=1)]
+        
+        # Encontrar as linhas duplicadas com base na coluna 'inventory_id'
+        duplicated_rows = df_envio[df_envio.duplicated(subset='inventory_id', keep=False)]
+
+        # Verificar se duplicated_rows não é vazio
+        if not duplicated_rows.empty:
+            # Criar um novo DataFrame com as linhas duplicadas
+            df_duplicatas = duplicated_rows.copy()
+
+            # Agrupar por 'inventory_id'
+            grouped_df = df_duplicatas.groupby('inventory_id')
+
+            # Iterar sobre os grupos
+            for group_name, group_df in grouped_df:
+                # Verificar a condição em cada linha do grupo
+                condition_check = group_df['envio_ajust'] > group_df['quantidade_disponivel']
+
+                # Exibir as linhas que satisfazem a condição
+                df_satisfaz_condicao = group_df[condition_check]
+
+                # Calcular a razão e adicionar uma nova coluna
+                df_satisfaz_condicao['razao'] = df_satisfaz_condicao['quantidade_disponivel'] / df_satisfaz_condicao['qtd_item']
+                df_satisfaz_condicao['razao'] = df_satisfaz_condicao['razao'].apply(floor)
+
+                # Aplicar o valor da razão em df_envio com base na condição
+                df_envio.loc[df_envio['inventory_id'].isin(df_satisfaz_condicao['inventory_id']), 'razao'] = df_satisfaz_condicao['razao'].values
+
+                # Atualizar a coluna 'envio_ajust' com base na nova lógica
+                df_envio['envio_ajust'] = df_envio.apply(lambda row: row['qtd_item'] * row['razao'] if row['razao'] > 1 else row['envio_ajust'], axis=1)
+
+                # Preencher valores nulos na coluna 'razao' em df_envio com 1
+                df_envio['razao'] = df_envio['razao'].fillna(1).astype('int64')
+
+        
+        ##############################################################################################
+        
         # print(f"Novo DataFrame do Agrupamento {i + 1}:\n", result_df)
         st.subheader(f"Grupo de envio {i + 1}")
-        st.dataframe(result_df, use_container_width=True)
+        st.dataframe(df_envio, use_container_width=True)
