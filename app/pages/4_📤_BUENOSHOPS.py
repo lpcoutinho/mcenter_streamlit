@@ -33,12 +33,12 @@ db_config = {
 }
 
 # variaveis de projeto
-empresa = 'MCENTER'
-table_ful_stock = 'mcenter_fulfillment_stock'
-table_orders = 'mcenter_ml_orders'
-table_items = 'mcenter_items'
-table_tf = 'tiny_fulfillment_mcenter'
-table_types = 'mcenter_types'
+empresa = 'BUENOSHOPS'
+table_ful_stock = 'bueno_fulfillment_stock'
+table_orders = 'bueno_ml_orders'
+table_items = 'bueno_items'
+table_tf = 'tiny_fulfillment_bueno'
+table_types = 'bueno_types'
 
 # Interface do Streamlit
 st.set_page_config(page_title=f"{empresa} FULFILLMENT", layout="wide")
@@ -609,9 +609,6 @@ if st.button("Iniciar Consulta"):
 
     # buscando dados da SmartGo
     df_wms = get_wms_data(SMARTGO_TOKEN)
-    cols_wms = ['id_depositante', 'depositante', 'idProduto', 'produto_nome',
-       'produtoCodigoInterno', 'produtoCodigoExterno',
-       'quantidade_disponivel']
 
     # renomeando colunas
     dic_column_name = {"ml_inventory_id": "inventory_id"}
@@ -899,9 +896,7 @@ if st.button("Iniciar Consulta"):
         ##############################################################################################
         resultado = pd.merge(result_df, df_wms, left_on='tiny_sku', right_on='produtoCodigoInterno', how='inner')
         resultado['produtoCodigoInterno'].fillna(resultado['tiny_sku'], inplace=True)
-        cols_res = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'stock_replenishment','tiny_id', 'tiny_sku', 'qtd_item', 'qtd_to_send', 'type','produtoCodigoInterno', 'produtoCodigoExterno','quantidade_disponivel']
-        resultado = resultado[cols_res]
-        
+
         df_envio = resultado.copy()
         # Função para aplicar nas linhas do DataFrame
         def ajustar_envio(row):
@@ -958,8 +953,8 @@ if st.button("Iniciar Consulta"):
 
                 # Preencher valores nulos na coluna 'razao' em df_envio com 1
                 df_envio['razao'] = df_envio['razao'].fillna(1).astype('int64')
-                # cols = ['inventory_id','ml_code','seller_sku','title','tiny_id','tiny_sku','produtoCodigoInterno','produtoCodigoExterno','type','qtd_item','stock_replenishment','quantidade_disponivel','qtd_to_send','envio_ajust']
-                # df_envio = df_envio[cols]
+
+        
         ##############################################################################################
         
         # print(f"Novo DataFrame do Agrupamento {i + 1}:\n", result_df)
