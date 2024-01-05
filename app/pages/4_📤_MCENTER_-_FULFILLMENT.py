@@ -649,14 +649,14 @@ if st.button("Iniciar Consulta"):
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoInterno",
-        how="left",
+        how='left'
     )
     df_wms_tf_no_itens_ce = pd.merge(
         df_tiny_fulfillment_no_itens,
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoExterno",
-        how="left",
+        how='left'
     )
 
     # concatenando os dfs
@@ -682,14 +682,10 @@ if st.button("Iniciar Consulta"):
 
     df_wms_tf_no_itens = df_wms_tf_no_itens[cols]
 
-    df_wms_tf_no_itens["quantidade_disponivel"] = (
-        df_wms_tf_no_itens["quantidade_disponivel"].fillna(0).astype("int64")
-    )
-
+    df_wms_tf_no_itens['quantidade_disponivel'] = df_wms_tf_no_itens['quantidade_disponivel'].fillna(0).astype('int64')
+    
     # Dados onde quantidade_disponivel = 0
-    df_wms_tf_no_itens_less_zero = df_wms_tf_no_itens[
-        df_wms_tf_no_itens["quantidade_disponivel"] < 1
-    ]
+    df_wms_tf_no_itens_less_zero = df_wms_tf_no_itens[df_wms_tf_no_itens['quantidade_disponivel'] < 1 ]
     df_wms_tf_no_itens_less_zero = df_wms_tf_no_itens_less_zero.drop_duplicates()
 
     ### Contando estoque da WMS em Produtos sem vendas no período
@@ -738,14 +734,14 @@ if st.button("Iniciar Consulta"):
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoInterno",
-        how="left",
+        how='left'
     )
     df_wms_tf_sold_zero_ce = pd.merge(
         df_tiny_fulfillment_sold_zero,
         df_wms,
         left_on="tiny_sku",
         right_on="produtoCodigoExterno",
-        how="left",
+        how='left'
     )
 
     # concatenando os dfs
@@ -771,16 +767,12 @@ if st.button("Iniciar Consulta"):
 
     df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
 
-    df_wms_tf_sold_zero["quantidade_disponivel"] = (
-        df_wms_tf_sold_zero["quantidade_disponivel"].fillna(0).astype("int64")
-    )
+    df_wms_tf_sold_zero['quantidade_disponivel'] = df_wms_tf_sold_zero['quantidade_disponivel'].fillna(0).astype('int64')
 
     # Dados onde quantidade_disponivel = 0
-    df_wms_tf_sold_zero_less_zero = df_wms_tf_sold_zero[
-        df_wms_tf_sold_zero["quantidade_disponivel"] < 1
-    ]
+    df_wms_tf_sold_zero_less_zero = df_wms_tf_sold_zero[df_wms_tf_sold_zero['quantidade_disponivel'] < 1 ]
     df_wms_tf_sold_zero_less_zero = df_wms_tf_sold_zero_less_zero.drop_duplicates()
-
+    
     ## Removendo e somando duplicatas
     # Lista das colunas que devem ser usadas para identificar linhas repetidas
     cols_to_check_duplicates = [
@@ -809,17 +801,14 @@ if st.button("Iniciar Consulta"):
         .reset_index()
     )
 
+    
     # Concatene os dois DataFrames verticalmente
-    df_wms_tf_no_itens = pd.concat(
-        [df_wms_tf_no_itens_sum, df_wms_tf_no_itens_less_zero], ignore_index=True
-    )
+    df_wms_tf_no_itens = pd.concat([df_wms_tf_no_itens_sum, df_wms_tf_no_itens_less_zero], ignore_index=True)
     df_wms_tf_no_itens = df_wms_tf_no_itens.drop_duplicates()
-
-    df_wms_tf_sold_zero = pd.concat(
-        [df_wms_tf_sold_zero_sum, df_wms_tf_sold_zero_less_zero], ignore_index=True
-    )
+    
+    df_wms_tf_sold_zero = pd.concat([df_wms_tf_sold_zero_sum, df_wms_tf_sold_zero_less_zero], ignore_index=True)
     df_wms_tf_sold_zero = df_wms_tf_sold_zero.drop_duplicates()
-
+ 
     # organizando
     df_wms_tf_no_itens = df_wms_tf_no_itens[cols]
     df_wms_tf_sold_zero = df_wms_tf_sold_zero[cols]
