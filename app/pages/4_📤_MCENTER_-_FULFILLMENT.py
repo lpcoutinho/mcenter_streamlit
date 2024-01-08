@@ -33,12 +33,12 @@ db_config = {
 }
 
 # variaveis de projeto
-empresa = 'MCENTER'
-table_ful_stock = 'mcenter_fulfillment_stock'
-table_orders = 'mcenter_ml_orders'
-table_items = 'mcenter_items'
-table_tf = 'tiny_fulfillment_mcenter'
-table_types = 'mcenter_types'
+empresa = "MCENTER"
+table_ful_stock = "mcenter_fulfillment_stock"
+table_orders = "mcenter_ml_orders"
+table_items = "mcenter_items"
+table_tf = "tiny_fulfillment_mcenter"
+table_types = "mcenter_types"
 
 # Interface do Streamlit
 st.set_page_config(page_title=f"{empresa} FULFILLMENT", layout="wide")
@@ -60,7 +60,6 @@ st.header("Dias para o cálculo de envio", divider="grey")
 input_days = st.number_input(
     label="Enviar produtos para os próximos x dias", step=1, value=30
 )
-
 
 
 def get_wms_data(SMARTGO_TOKEN):
@@ -609,7 +608,7 @@ if st.button("Iniciar Consulta"):
 
     # buscando dados da SmartGo
     df_wms = get_wms_data(SMARTGO_TOKEN)
-    
+
     # renomeando colunas
     dic_column_name = {"ml_inventory_id": "inventory_id"}
     df_no_itens = df_no_itens.rename(columns=dic_column_name)
@@ -775,7 +774,7 @@ if st.button("Iniciar Consulta"):
         "stock_replenishment",
         "status",
         "produtoCodigoInterno",
-        "produtoCodigoExterno",
+        # "produtoCodigoExterno",
         "quantidade_disponivel",
     ]
 
@@ -804,7 +803,7 @@ if st.button("Iniciar Consulta"):
         "stock_replenishment",
         "status",
         "produtoCodigoInterno",
-        "produtoCodigoExterno",
+        # "produtoCodigoExterno",
     ]
 
     # Agrupar por linhas repetidas e somar a coluna quantidade_disponivel
@@ -892,40 +891,86 @@ if st.button("Iniciar Consulta"):
         result_df["qtd_to_send"] = result_df["qtd_to_send"].astype("int64")
 
         result_df = result_df[cols]
-        
+
         ##############################################################################################
-        resultado = pd.merge(result_df, df_wms, left_on='tiny_sku', right_on='produtoCodigoInterno', how='inner')
-        resultado['produtoCodigoInterno'].fillna(resultado['tiny_sku'], inplace=True)
-        cols_res = ['inventory_id', 'ml_code', 'seller_sku', 'title', 'stock_replenishment','tiny_id', 'tiny_sku', 'qtd_item', 'qtd_to_send', 'type','produtoCodigoInterno', 'produtoCodigoExterno','quantidade_disponivel']
+        resultado = pd.merge(
+            result_df,
+            df_wms,
+            left_on="tiny_sku",
+            right_on="produtoCodigoInterno",
+            how="inner",
+        )
+        resultado["produtoCodigoInterno"].fillna(resultado["tiny_sku"], inplace=True)
+        cols_res = [
+            "inventory_id",
+            "ml_code",
+            "seller_sku",
+            "title",
+            "stock_replenishment",
+            "tiny_id",
+            "tiny_sku",
+            "qtd_item",
+            "qtd_to_send",
+            "type",
+            "produtoCodigoInterno",
+            # "produtoCodigoExterno",
+            "quantidade_disponivel",
+        ]
         resultado = resultado[cols_res]
-        
+
         df_envio = resultado.copy()
+
+        cols_to_check_dup =  ['inventory_id', 'ml_code', 'seller_sku', 'title', 'stock_replenishment',
+        'tiny_id', 'tiny_sku', 'qtd_item', 'qtd_to_send', 'type',
+        'produtoCodigoInterno']
+        
+        # Agrupar por linhas repetidas e somar a coluna quantidade_disponivel
+        df_envio = (
+            df_envio.groupby(cols_to_check_dup)["quantidade_disponivel"]
+            .sum()
+            .reset_index()
+        )
+        df_envio = (
+            df_envio.groupby(cols_to_check_dup)["quantidade_disponivel"]
+            .sum()
+            .reset_index()
+        )
+
         # Função para aplicar nas linhas do DataFrame
         def ajustar_envio(row):
-            if (row['quantidade_disponivel'] < row['qtd_to_send']) and (row['quantidade_disponivel'] > 0):
-                return row['quantidade_disponivel']
-            elif row['quantidade_disponivel'] > row['qtd_to_send']:
-                return row['qtd_to_send']
+            if (row["quantidade_disponivel"] < row["qtd_to_send"]) and (
+                row["quantidade_disponivel"] > 0
+            ):
+                return row["quantidade_disponivel"]
+            elif row["quantidade_disponivel"] > row["qtd_to_send"]:
+                return row["qtd_to_send"]
             else:
                 return 0
 
         # Criar a coluna 'envio_ajust' aplicando a função nas linhas
-        df_envio['envio_ajust'] = df_envio.apply(ajustar_envio, axis=1)
+        df_envio["envio_ajust"] = df_envio.apply(ajustar_envio, axis=1)
 
-        # Produtos sem estoque 
-        df_no_stock = df_envio[(df_envio['quantidade_disponivel'] <  0)]
+        # Produtos sem estoque
+        df_no_stock = df_envio[(df_envio["quantidade_disponivel"] < 0)]
 
         # Produtos com estoque menor que o solicitado e quantidade disponível maior que 0
-        df_less_stock = df_envio[(df_envio['quantidade_disponivel'] < df_envio['qtd_to_send']) & (df_envio['quantidade_disponivel'] > 0)]
+        df_less_stock = df_envio[
+            (df_envio["quantidade_disponivel"] < df_envio["qtd_to_send"])
+            & (df_envio["quantidade_disponivel"] > 0)
+        ]
 
         # Encontrar as linhas comuns entre df_envio e df_no_stock
-        common_rows = pd.merge(df_envio, df_no_stock, how='inner')
+        common_rows = pd.merge(df_envio, df_no_stock, how="inner")
 
         # Remover as linhas comuns de df_envio
-        df_envio = df_envio[~df_envio.isin(common_rows.to_dict(orient='list')).all(axis=1)]
-        
+        df_envio = df_envio[
+            ~df_envio.isin(common_rows.to_dict(orient="list")).all(axis=1)
+        ]
+
         # Encontrar as linhas duplicadas com base na coluna 'inventory_id'
-        duplicated_rows = df_envio[df_envio.duplicated(subset='inventory_id', keep=False)]
+        duplicated_rows = df_envio[
+            df_envio.duplicated(subset="inventory_id", keep=False)
+        ]
 
         # Verificar se duplicated_rows não é vazio
         if not duplicated_rows.empty:
@@ -933,32 +978,47 @@ if st.button("Iniciar Consulta"):
             df_duplicatas = duplicated_rows.copy()
 
             # Agrupar por 'inventory_id'
-            grouped_df = df_duplicatas.groupby('inventory_id')
+            grouped_df = df_duplicatas.groupby("inventory_id")
 
             # Iterar sobre os grupos
             for group_name, group_df in grouped_df:
                 # Verificar a condição em cada linha do grupo
-                condition_check = group_df['envio_ajust'] > group_df['quantidade_disponivel']
+                condition_check = (
+                    group_df["envio_ajust"] > group_df["quantidade_disponivel"]
+                )
 
                 # Exibir as linhas que satisfazem a condição
                 df_satisfaz_condicao = group_df[condition_check]
 
                 # Calcular a razão e adicionar uma nova coluna
-                df_satisfaz_condicao['razao'] = df_satisfaz_condicao['quantidade_disponivel'] / df_satisfaz_condicao['qtd_item']
-                df_satisfaz_condicao['razao'] = df_satisfaz_condicao['razao'].apply(floor)
+                df_satisfaz_condicao["razao"] = (
+                    df_satisfaz_condicao["quantidade_disponivel"]
+                    / df_satisfaz_condicao["qtd_item"]
+                )
+                df_satisfaz_condicao["razao"] = df_satisfaz_condicao["razao"].apply(
+                    floor
+                )
 
                 # Aplicar o valor da razão em df_envio com base na condição
-                df_envio.loc[df_envio['inventory_id'].isin(df_satisfaz_condicao['inventory_id']), 'razao'] = df_satisfaz_condicao['razao'].values
+                df_envio.loc[
+                    df_envio["inventory_id"].isin(df_satisfaz_condicao["inventory_id"]),
+                    "razao",
+                ] = df_satisfaz_condicao["razao"].values
 
                 # Atualizar a coluna 'envio_ajust' com base na nova lógica
-                df_envio['envio_ajust'] = df_envio.apply(lambda row: row['qtd_item'] * row['razao'] if row['razao'] > 1 else row['envio_ajust'], axis=1)
+                df_envio["envio_ajust"] = df_envio.apply(
+                    lambda row: row["qtd_item"] * row["razao"]
+                    if row["razao"] > 1
+                    else row["envio_ajust"],
+                    axis=1,
+                )
 
                 # Preencher valores nulos na coluna 'razao' em df_envio com 1
-                df_envio['razao'] = df_envio['razao'].fillna(1).astype('int64')
+                df_envio["razao"] = df_envio["razao"].fillna(1).astype("int64")
                 # cols = ['inventory_id','ml_code','seller_sku','title','tiny_id','tiny_sku','produtoCodigoInterno','produtoCodigoExterno','type','qtd_item','stock_replenishment','quantidade_disponivel','qtd_to_send','envio_ajust']
                 # df_envio = df_envio[cols]
         ##############################################################################################
-        
+
         # print(f"Novo DataFrame do Agrupamento {i + 1}:\n", result_df)
         st.subheader(f"Grupo de envio {i + 1}")
         st.dataframe(df_envio, use_container_width=True)
